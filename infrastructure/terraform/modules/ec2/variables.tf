@@ -1,31 +1,25 @@
 variable "environment" {
-  description = "Environment name"
-  type        = string
+  type = string
 }
 
-variable "name" {
-  description = "Name identifier for the instance"
-  type        = string
+variable "service_name" {
+  type = string
 }
 
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t2.micro"
+variable "vpc_id" {
+  type = string
 }
 
 variable "subnet_id" {
-  description = "Subnet ID where to place the instance"
-  type        = string
+  type = string
+}
+
+variable "instance_type" {
+  type    = string
+  default = "t2.micro" # Requisito de capa gratuita / AWS Academy
 }
 
 variable "key_name" {
-  description = "Key pair name for SSH access"
-  type        = string
-  default     = "vockey"
-}
-
-variable "security_group_ids" {
-  description = "List of security group IDs"
-  type        = list(string)
+  type    = string
+  default = "vockey" # Clave SSH inyectada por defecto en AWS Academy
 }
