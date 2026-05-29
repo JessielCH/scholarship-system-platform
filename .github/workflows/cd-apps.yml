@@ -1,0 +1,41 @@
+name: CD Microservices (EC2 Deployment)
+
+on:
+  push:
+    branches: [ "QA", "main" ]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+
+jobs:
+  deploy-services:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set Environment
+        id: set-env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "env_name=prod" >> $GITHUB_OUTPUT
+          else
+            echo "env_name=qa" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install and Build
+        run: |
+          npm ci
+          npx turbo run build --filter=...[HEAD]
+          
+      - name: Deploy to EC2 via SSH
+        # NOTE: This is a skeleton logic for deploying to EC2.
+        # As microservices are coded in specific languages, deployment scripts will be refined.
+        run: |
+          echo "Deploying built artifacts to EC2 instances in ${{ steps.set-env.outputs.env_name }} environment..."
+          # rsync -avz -e "ssh -i key.pem" apps/identity-service/dist/ user@<EC2_IP>:/var/www/identity/
