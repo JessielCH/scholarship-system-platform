@@ -1,0 +1,25 @@
+variable "environment" {
+  type = string
+}
+
+variable "service_name" {
+  type = string
+}
+
+variable "vpc_id" {
+  type = string
+}
+
+variable "subnet_id" {
+  type = string
+}
+
+variable "instance_type" {
+  type    = string
+  default = "t2.micro" # Requisito de capa gratuita / AWS Academy
+}
+
+variable "key_name" {
+  type    = string
+  default = "vockey" # Clave SSH inyectada por defecto en AWS Academy
+}
