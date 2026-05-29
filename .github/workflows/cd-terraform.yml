@@ -2,7 +2,7 @@ name: CD Terraform (Infrastructure)
 
 on:
   push:
-    branches: [ "QA", "main" ]
+    branches: [ "develop", "QA", "main" ]
     paths:
       - 'infrastructure/terraform/**'
 
@@ -18,8 +18,10 @@ jobs:
         run: |
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "env_name=prod" >> $GITHUB_OUTPUT
-          else
+          elif [ "${{ github.ref }}" = "refs/heads/QA" ]; then
             echo "env_name=qa" >> $GITHUB_OUTPUT
+          else
+            echo "env_name=develop" >> $GITHUB_OUTPUT
           fi
           
       - name: Configure AWS Credentials
