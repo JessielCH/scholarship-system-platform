@@ -1,0 +1,45 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [ "develop", "QA", "main" ]
+
+jobs:
+  lint-and-test:
+    name: Build, Lint & Test (Monorepo)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Validate Commits
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+        
+      - name: Turborepo Build, Lint & Test
+        run: npx turbo run build lint test
+
+  terraform-check:
+    name: Terraform Format & Validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+      - name: Terraform Fmt
+        run: terraform fmt -check -recursive
