@@ -1,0 +1,42 @@
+name: CD Terraform (Infrastructure)
+
+on:
+  push:
+    branches: [ "develop", "QA", "main" ]
+    paths:
+      - 'infrastructure/terraform/**'
+
+jobs:
+  deploy-infra:
+    name: Deploy Infrastructure via Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set target environment
+        id: set-env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "env_name=prod" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/QA" ]; then
+            echo "env_name=qa" >> $GITHUB_OUTPUT
+          else
+            echo "env_name=develop" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        
+      - name: Terraform Init & Apply
+        working-directory: infrastructure/terraform/environments/${{ steps.set-env.outputs.env_name }}
+        run: |
+          terraform init
+          terraform apply -auto-approve
