@@ -16,5 +16,5 @@ module "ec2_qa" {
   vpc_id        = module.vpc.vpc_id
   subnet_id     = module.vpc.public_subnet_ids[0]
   instance_type = "t2.micro"
-  key_name      = "vockey" 
+  key_name      = "vockey"
 }
