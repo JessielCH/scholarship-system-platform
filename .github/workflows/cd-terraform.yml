@@ -10,6 +10,7 @@ jobs:
   deploy-infra:
     name: Deploy Infrastructure via Terraform
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || (github.ref == 'refs/heads/QA' && 'qa' || 'develop') }}
     steps:
       - uses: actions/checkout@v4
       
