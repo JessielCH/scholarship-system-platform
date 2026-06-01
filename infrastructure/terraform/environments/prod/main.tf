@@ -18,3 +18,17 @@ module "ec2_prod" {
   instance_type = "t2.micro"
   key_name      = "vockey"
 }
+
+module "rds" {
+  source = "../../modules/rds"
+
+  environment    = "prod"
+  vpc_id         = module.vpc.vpc_id
+  vpc_cidr       = "10.3.0.0/16"
+  subnet_ids     = module.vpc.private_subnet_ids
+  instance_class = "db.t3.micro"
+  db_name        = "identitydbprod"
+  db_username    = "postgres"
+  db_password    = var.db_password
+  multi_az       = true
+}
