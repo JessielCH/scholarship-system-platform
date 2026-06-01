@@ -1,4 +1,4 @@
-name: CD Microservices (EC2 Deployment)
+name: CD Microservices (Docker & Testing)
 
 on:
   push:
@@ -7,35 +7,64 @@ on:
       - 'apps/**'
       - 'packages/**'
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  deploy-services:
-    name: Deploy to EC2
+  build-and-push:
+    name: Build & Push Docker Images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [api-gateway, identity-service]
+    
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set Environment
-        id: set-env
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "env_name=prod" >> $GITHUB_OUTPUT
-          else
-            echo "env_name=qa" >> $GITHUB_OUTPUT
-          fi
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
         with:
-          node-version: 20
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Install and Build
-        run: |
-          npm ci
-          npx turbo run build --filter=...[HEAD]
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}
           
-      - name: Deploy to EC2 via SSH
-        # NOTE: This is a skeleton logic for deploying to EC2.
-        # As microservices are coded in specific languages, deployment scripts will be refined.
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    name: Deploy to EC2
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Deployment
         run: |
-          echo "Deploying built artifacts to EC2 instances in ${{ steps.set-env.outputs.env_name }} environment..."
-          # rsync -avz -e "ssh -i key.pem" apps/identity-service/dist/ user@<EC2_IP>:/var/www/identity/
+          echo "Deploying Docker images from GHCR to EC2..."
+          # En el futuro: ssh user@host "docker pull ghcr.io/..."
+
+  load-test:
+    name: K6 Load Testing
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/QA'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run k6 load test
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: infrastructure/testing/load/k6-script.js
+          flags: --vus 10 --duration 5s

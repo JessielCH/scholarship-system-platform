@@ -2,7 +2,7 @@ name: CI Pipeline
 
 on:
   pull_request:
-    branches: [ "develop", "QA", "main" ]
+    branches: [ "develop" ]
 
 jobs:
   lint-and-test:
@@ -26,8 +26,11 @@ jobs:
       - name: Validate Commits
         run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
         
-      - name: Turborepo Build, Lint & Test
-        run: npx turbo run build lint test
+      - name: Turborepo Build & Lint
+        run: npx turbo run build lint
+        
+      - name: Unit Tests
+        run: npx turbo run test
 
   terraform-check:
     name: Terraform Format & Validate
