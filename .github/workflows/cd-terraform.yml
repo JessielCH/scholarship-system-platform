@@ -38,6 +38,8 @@ jobs:
         
       - name: Terraform Init & Apply
         working-directory: infrastructure/terraform/environments/${{ steps.set-env.outputs.env_name }}
+        env:
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
         run: |
           terraform init
           terraform apply -auto-approve
