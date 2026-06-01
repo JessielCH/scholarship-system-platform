@@ -39,7 +39,7 @@ resource "aws_db_instance" "default" {
   allocated_storage    = 20
   storage_type         = "gp2"
   engine               = "postgres"
-  engine_version       = "15.4" # Or 15, let's use 15
+  engine_version       = "15"
   instance_class       = var.instance_class
   db_name              = var.db_name
   username             = var.db_username
