@@ -18,3 +18,17 @@ module "ec2_qa" {
   instance_type = "t2.micro"
   key_name      = "vockey"
 }
+
+module "rds" {
+  source = "../../modules/rds"
+
+  environment    = "qa"
+  vpc_id         = module.vpc.vpc_id
+  vpc_cidr       = "10.2.0.0/16"
+  subnet_ids     = module.vpc.private_subnet_ids
+  instance_class = "db.t3.micro"
+  db_name        = "identitydbqa"
+  db_username    = "postgres"
+  db_password    = var.db_password
+  multi_az       = false
+}
