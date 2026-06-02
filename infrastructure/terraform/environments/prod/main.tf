@@ -8,13 +8,69 @@ module "vpc" {
   availability_zones   = ["us-east-1a", "us-east-1b"]
 }
 
-module "ec2_prod" {
-  source = "../../modules/ec2"
+module "security_groups" {
+  source      = "../../modules/security_groups"
+  environment = "prod"
+  vpc_id      = module.vpc.vpc_id
+}
 
-  environment   = "prod"
-  service_name  = "api-gateway" # Eventualmente correrá nuestro Gateway Node.js
-  vpc_id        = module.vpc.vpc_id
-  subnet_id     = module.vpc.public_subnet_ids[0]
-  instance_type = "t2.micro"
-  key_name      = "vockey"
+locals {
+  docker_install_script = <<-EOF
+    #!/bin/bash
+    apt-get update -y
+    apt-get install -y docker.io docker-compose
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ubuntu
+  EOF
+}
+
+module "ec2_edge" {
+  source             = "../../modules/ec2"
+  environment        = "prod"
+  service_name       = "edge"
+  subnet_id          = module.vpc.public_subnet_ids[0]
+  security_group_ids = [module.security_groups.edge_sg_id]
+  instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
+}
+
+module "ec2_core" {
+  source             = "../../modules/ec2"
+  environment        = "prod"
+  service_name       = "core"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.core_sg_id]
+  instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
+}
+
+module "ec2_security" {
+  source             = "../../modules/ec2"
+  environment        = "prod"
+  service_name       = "security"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.security_sg_id]
+  instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
+}
+
+module "ec2_compute" {
+  source             = "../../modules/ec2"
+  environment        = "prod"
+  service_name       = "compute"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.compute_sg_id]
+  instance_type      = "t2.micro" # Changed from t3.small to avoid Academy limits
+  user_data          = local.docker_install_script
+}
+
+module "ec2_database" {
+  source             = "../../modules/ec2"
+  environment        = "prod"
+  service_name       = "database"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.database_sg_id]
+  instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
 }

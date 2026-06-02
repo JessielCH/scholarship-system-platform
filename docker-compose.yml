@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: scholarship_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123!
+      POSTGRES_DB: identitydbqa
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: scholarship_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  identity-service:
+    build:
+      context: ./apps/identity-service
+      dockerfile: Dockerfile
+    container_name: scholarship_identity
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres123!
+      - DB_NAME=identitydbqa
+      - NODE_ENV=development
+    volumes:
+      - ./keys:/app/keys:ro
+    ports:
+      - "3001:3001"
+
+  api-gateway:
+    build:
+      context: ./apps/api-gateway
+      dockerfile: Dockerfile
+    container_name: scholarship_gateway
+    depends_on:
+      redis:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379
+      - IDENTITY_SERVICE_URL=http://identity-service:3001
+    volumes:
+      - ./keys:/app/keys:ro
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
