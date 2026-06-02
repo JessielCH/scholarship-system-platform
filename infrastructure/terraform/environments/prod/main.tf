@@ -33,6 +33,7 @@ module "ec2_edge" {
   security_group_ids = [module.security_groups.edge_sg_id]
   instance_type      = "t2.micro"
   user_data          = local.docker_install_script
+  allocate_eip       = true
 }
 
 module "ec2_core" {

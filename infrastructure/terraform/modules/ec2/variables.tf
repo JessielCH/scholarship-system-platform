@@ -29,3 +29,9 @@ variable "user_data" {
   type        = string
   default     = ""
 }
+
+variable "allocate_eip" {
+  description = "Whether to allocate an Elastic IP for this instance"
+  type        = bool
+  default     = false
+}
