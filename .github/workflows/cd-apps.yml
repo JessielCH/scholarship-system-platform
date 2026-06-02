@@ -34,7 +34,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.service }}
+          images: ${{ env.REGISTRY }}/jessielch/scholarship-system-platform/${{ matrix.service }}
+          tags: |
+            type=raw,value=latest
           
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
