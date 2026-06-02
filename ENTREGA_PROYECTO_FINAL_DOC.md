@@ -11,7 +11,7 @@
 - **Commit History:** A detailed and meaningful commit history is available on the `develop`, `QA`, and `main` branches, demonstrating the iterative process, branch protection, and GitOps workflow.
 - **Technical README:** Included in the root of the repository, detailing the architecture, local setup instructions, and deployment commands.
 - **Configuration Files:** The repository includes `docker-compose.yml` for local orchestration, `.github/workflows` for CI/CD pipelines, and `infrastructure/terraform` for Infrastructure as Code (IaC).
-- **Environment Variables:** Documented safely. Sensitive credentials, passwords, and JWT private/public keys are explicitly excluded from the repository using `.gitignore` and are injected securely via GitHub Secrets during CI/CD.
+- **Environment Variables:** Documented safely. Sensitive credentials, passwords, and JWT symmetric secrets are explicitly excluded from the repository using `.gitignore` and are injected securely via GitHub Secrets during CI/CD.
 
 ---
 
@@ -19,7 +19,7 @@
 
 ### 1. Overview of the Two Microservices
 For this final project delivery, two core functional microservices of the distributed architecture have been implemented:
-1. **API Gateway (Edge):** Built with Node.js and Fastify. It acts as the single entry point for external requests. It is responsible for routing requests to the appropriate internal microservices, implementing global rate limiting using Redis to prevent brute-force attacks, and validating JWT tokens (RS256) to ensure only authenticated users access protected internal routes.
+1. **API Gateway (Edge):** Built with Node.js and Fastify. It acts as the single entry point for external requests. It is responsible for routing requests to the appropriate internal microservices, implementing global rate limiting using Redis to prevent brute-force attacks, and validating JWT tokens (HS256) to ensure only authenticated users access protected internal routes.
 2. **Identity Service:** Built with NestJS (TypeScript). A backend microservice responsible for handling user authentication and authorization. It manages identities, validates user credentials, generates secure JWT tokens, and maintains user state. It connects exclusively to a PostgreSQL database.
 
 ### 2. Functional Responsibility and Independence
