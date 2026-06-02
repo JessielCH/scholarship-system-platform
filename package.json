@@ -13,7 +13,6 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "setup:local": "node scripts/generate-keys.js",
     "prepare": "husky"
   },
   "devDependencies": {

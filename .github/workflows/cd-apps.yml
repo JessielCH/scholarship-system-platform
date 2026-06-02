@@ -46,12 +46,14 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  deploy:
-    name: Deploy to EC2
+  deploy-qa:
+    name: Deploy to QA
     needs: build-and-push
     runs-on: ubuntu-latest
+    environment: qa
+    if: github.ref == 'refs/heads/QA'
     steps:
-      - name: Deploy to Edge EC2
+      - name: Deploy to QA Edge EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
@@ -60,45 +62,73 @@ jobs:
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # Pull latest images
+            # Create isolated env file for QA
+            echo "JWT_SECRET=\"${{ secrets.JWT_SECRET }}\"" > .env.qa
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.qa
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.qa
+            
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
             
-            # Create docker network
             sudo docker network create micro-net || true
             
-            # Deploy Redis
             sudo docker rm -f redis || true
-            sudo docker run -d --name redis --network micro-net --restart always -p 6379:6379 redis:alpine
+            sudo docker run -d --name redis --network micro-net --restart unless-stopped -p 6379:6379 redis:alpine
             
-            # Deploy Postgres
             sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres --network micro-net --restart always -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=identitydbqa -e POSTGRES_USER=postgres postgres:15-alpine
+            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} postgres:15-alpine
             
-            # Wait for Postgres to initialize
             sleep 15
             
-            # Deploy Identity Service
             sudo docker rm -f identity-service || true
-            sudo docker run -d --name identity-service --network micro-net --restart always -p 3001:3001 \
-              -e PORT=3001 \
-              -e DB_HOST=postgres \
-              -e DB_PORT=5432 \
-              -e DB_USERNAME=postgres \
-              -e DB_PASSWORD=postgres \
-              -e DB_NAME=identitydbqa \
-              ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
+            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -p 3001:3001 --env-file .env.qa -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
               
-            # Deploy API Gateway
             sudo docker rm -f api-gateway || true
-            sudo docker run -d --name api-gateway --network micro-net --restart always -p 3000:3000 \
-              -e REDIS_URL=redis://redis:6379 \
-              -e IDENTITY_SERVICE_URL=http://identity-service:3001 \
-              ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -p 3000:3000 --env-file .env.qa -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+
+  deploy-prod:
+    name: Deploy to Production
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: prod
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to PROD Edge EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Create isolated env file for PROD
+            echo "JWT_SECRET=\"${{ secrets.JWT_SECRET }}\"" > .env.prod
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.prod
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.prod
+            
+            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
+            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+            
+            sudo docker network create micro-net || true
+            
+            sudo docker rm -f redis || true
+            sudo docker run -d --name redis --network micro-net --restart unless-stopped -p 6379:6379 redis:alpine
+            
+            sudo docker rm -f postgres || true
+            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} postgres:15-alpine
+            
+            sleep 15
+            
+            sudo docker rm -f identity-service || true
+            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -p 3001:3001 --env-file .env.prod -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
+              
+            sudo docker rm -f api-gateway || true
+            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -p 3000:3000 --env-file .env.prod -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
 
   load-test:
     name: K6 Load Testing
-    needs: deploy
+    needs: deploy-qa
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/QA'
     steps:
