@@ -6,8 +6,8 @@ variable "service_name" {
   type = string
 }
 
-variable "vpc_id" {
-  type = string
+variable "security_group_ids" {
+  type = list(string)
 }
 
 variable "subnet_id" {
@@ -22,4 +22,10 @@ variable "instance_type" {
 variable "key_name" {
   type    = string
   default = "vockey" # Clave SSH inyectada por defecto en AWS Academy
+}
+
+variable "user_data" {
+  description = "User data script to run on instance boot"
+  type        = string
+  default     = ""
 }
