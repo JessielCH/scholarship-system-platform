@@ -20,6 +20,7 @@ resource "aws_instance" "this" {
 
   vpc_security_group_ids = var.security_group_ids
   key_name               = var.key_name
+  user_data              = var.user_data != "" ? var.user_data : null
 
   # AWS Academy compatibilidad: se ignora el iam_instance_profile para evitar AccessDenied
   # iam_instance_profile = "LabInstanceProfile"
