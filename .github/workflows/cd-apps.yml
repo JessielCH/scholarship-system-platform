@@ -64,21 +64,24 @@ jobs:
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
             
+            # Create docker network
+            sudo docker network create micro-net || true
+            
             # Deploy Redis
             sudo docker rm -f redis || true
-            sudo docker run -d --name redis -p 6379:6379 redis:alpine
+            sudo docker run -d --name redis --network micro-net --restart always -p 6379:6379 redis:alpine
             
             # Deploy Postgres
             sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=identitydbqa -e POSTGRES_USER=postgres postgres:15-alpine
+            sudo docker run -d --name postgres --network micro-net --restart always -p 5432:5432 -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=identitydbqa -e POSTGRES_USER=postgres postgres:15-alpine
             
-            # Wait for Postgres to be ready
-            sleep 10
+            # Wait for Postgres to initialize
+            sleep 15
             
             # Deploy Identity Service
             sudo docker rm -f identity-service || true
-            sudo docker run -d --name identity-service -p 3001:3001 \
-              -e DB_HOST=172.17.0.1 \
+            sudo docker run -d --name identity-service --network micro-net --restart always -p 3001:3001 \
+              -e DB_HOST=postgres \
               -e DB_PORT=5432 \
               -e DB_USERNAME=postgres \
               -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
@@ -87,9 +90,9 @@ jobs:
               
             # Deploy API Gateway
             sudo docker rm -f api-gateway || true
-            sudo docker run -d --name api-gateway -p 3000:3000 \
-              -e REDIS_URL=redis://172.17.0.1:6379 \
-              -e IDENTITY_SERVICE_URL=http://172.17.0.1:3001 \
+            sudo docker run -d --name api-gateway --network micro-net --restart always -p 3000:3000 \
+              -e REDIS_URL=redis://redis:6379 \
+              -e IDENTITY_SERVICE_URL=http://identity-service:3001 \
               ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
 
   load-test:
