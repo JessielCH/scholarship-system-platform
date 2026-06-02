@@ -281,9 +281,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
-
-# JWT Keys
-keys/
 .terraform/
 .terraform.lock.hcl
 **/.terraform/
