@@ -56,11 +56,11 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "${{ secrets.GH_PAT }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Pull latest images
-            sudo docker pull ghcr.io/${{ github.repository }}/identity-service:latest
-            sudo docker pull ghcr.io/${{ github.repository }}/api-gateway:latest
+            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
+            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
             
             # Deploy Identity Service
             sudo docker rm -f identity-service || true
@@ -70,14 +70,14 @@ jobs:
               -e DB_USERNAME=postgres \
               -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
               -e DB_NAME=identitydbqa \
-              ghcr.io/${{ github.repository }}/identity-service:latest
+              ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
               
             # Deploy API Gateway
             sudo docker rm -f api-gateway || true
             sudo docker run -d --name api-gateway -p 3000:3000 \
               -e REDIS_URL=redis://${{ secrets.DATABASE_PRIVATE_IP }}:6379 \
               -e IDENTITY_SERVICE_URL=http://localhost:3001 \
-              ghcr.io/${{ github.repository }}/api-gateway:latest
+              ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
 
   load-test:
     name: K6 Load Testing
