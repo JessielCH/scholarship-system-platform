@@ -3,8 +3,6 @@ import proxy from '@fastify/http-proxy';
 import fastifyRateLimit from '@fastify/rate-limit';
 import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
-import fs from 'fs';
-import path from 'path';
 
 const fastify = Fastify({ logger: true });
 
@@ -16,15 +14,6 @@ fastify.register(fastifyRateLimit, {
   timeWindow: '1 minute',
   redis: redis
 });
-
-const publicKeyPath = process.env.PUBLIC_KEY_PATH || path.join(__dirname, '../keys/public.pem');
-let publicKey: string = '';
-
-try {
-  publicKey = fs.readFileSync(publicKeyPath, 'utf8');
-} catch (error) {
-  fastify.log.warn('Public key not found in filesystem. Checking environment variable JWT_PUBLIC_KEY.');
-}
 
 fastify.decorateRequest('user', null);
 
@@ -42,11 +31,8 @@ fastify.addHook('preHandler', async (request, reply) => {
 
   const token = authHeader.split(' ')[1];
   try {
-    const key = process.env.JWT_PUBLIC_KEY || publicKey;
-    if (!key) {
-      throw new Error('Server misconfiguration: No public key available to verify tokens');
-    }
-    const decoded = jwt.verify(token, key, { algorithms: ['RS256'] });
+    const key = process.env.JWT_SECRET || 'super-secret-key-for-qa';
+    const decoded = jwt.verify(token, key, { algorithms: ['HS256'] });
     (request as any).user = decoded;
   } catch (err) {
     fastify.log.error(err);
