@@ -1,14 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class AuthService {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
-    // Basic mock implementation for S2 validation
-    if (email === 'test@uce.edu.ec' && pass === 'password') {
-      return { id: 'uuid-1234', email, role: 'STUDENT' };
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (user && await bcrypt.compare(pass, user.passwordHash)) {
+      const { passwordHash, ...result } = user;
+      return result;
     }
     return null;
   }
@@ -22,7 +31,26 @@ export class AuthService {
   }
 
   async register(body: any) {
-    // Mock register logic
-    return { message: 'User registered successfully', email: body.email };
+    if (!body.email || !body.password) {
+      throw new BadRequestException('Email and password are required');
+    }
+
+    const existingUser = await this.userRepository.findOne({ where: { email: body.email } });
+    if (existingUser) {
+      throw new BadRequestException('Email already in use');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(body.password, salt);
+
+    const user = this.userRepository.create({
+      email: body.email,
+      passwordHash,
+      role: body.role || 'STUDENT'
+    });
+
+    await this.userRepository.save(user);
+
+    return { message: 'User registered successfully', email: user.email };
   }
 }
