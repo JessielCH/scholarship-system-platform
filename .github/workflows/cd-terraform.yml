@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ "develop", "QA", "main" ]
-    paths:
-      - 'infrastructure/terraform/**'
 
 jobs:
   deploy-infra:
