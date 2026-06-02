@@ -30,3 +30,13 @@ resource "aws_instance" "this" {
     Environment = var.environment
   }
 }
+
+resource "aws_eip" "this" {
+  instance = aws_instance.this.id
+  domain   = "vpc"
+
+  tags = {
+    Name        = "${var.environment}-${var.service_name}-eip"
+    Environment = var.environment
+  }
+}
