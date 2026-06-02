@@ -61,7 +61,7 @@ module "ec2_compute" {
   service_name       = "compute"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.compute_sg_id]
-  instance_type      = "t3.small" # AI agent requires a bit more memory
+  instance_type      = "t2.micro" # Changed from t3.small to prevent AWS Academy shutdown
   user_data          = local.docker_install_script
 }
 
