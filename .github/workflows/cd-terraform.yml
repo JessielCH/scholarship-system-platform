@@ -38,7 +38,8 @@ jobs:
         
       - name: Setup Terraform State S3 Bucket
         run: |
-          BUCKET_NAME="scholarship-tf-state-${{ github.repository_id }}"
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET_NAME="scholarship-tf-state-${AWS_ACCOUNT_ID}"
           if ! aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
             echo "Bucket does not exist. Creating..."
             aws s3api create-bucket --bucket "$BUCKET_NAME" --region us-east-1
