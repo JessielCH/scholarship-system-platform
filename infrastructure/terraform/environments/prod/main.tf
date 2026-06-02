@@ -14,6 +14,17 @@ module "security_groups" {
   vpc_id      = module.vpc.vpc_id
 }
 
+locals {
+  docker_install_script = <<-EOF
+    #!/bin/bash
+    apt-get update -y
+    apt-get install -y docker.io docker-compose
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ubuntu
+  EOF
+}
+
 module "ec2_edge" {
   source             = "../../modules/ec2"
   environment        = "prod"
@@ -21,6 +32,7 @@ module "ec2_edge" {
   subnet_id          = module.vpc.public_subnet_ids[0]
   security_group_ids = [module.security_groups.edge_sg_id]
   instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
 }
 
 module "ec2_core" {
@@ -30,6 +42,7 @@ module "ec2_core" {
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.core_sg_id]
   instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
 }
 
 module "ec2_security" {
@@ -39,6 +52,7 @@ module "ec2_security" {
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.security_sg_id]
   instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
 }
 
 module "ec2_compute" {
@@ -48,6 +62,7 @@ module "ec2_compute" {
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.compute_sg_id]
   instance_type      = "t3.small" # AI agent requires a bit more memory
+  user_data          = local.docker_install_script
 }
 
 module "ec2_database" {
@@ -57,4 +72,5 @@ module "ec2_database" {
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.database_sg_id]
   instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
 }

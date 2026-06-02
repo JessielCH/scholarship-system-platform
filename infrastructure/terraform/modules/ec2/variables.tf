@@ -23,3 +23,9 @@ variable "key_name" {
   type    = string
   default = "vockey" # Clave SSH inyectada por defecto en AWS Academy
 }
+
+variable "user_data" {
+  description = "User data script to run on instance boot"
+  type        = string
+  default     = ""
+}
