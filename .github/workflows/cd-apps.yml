@@ -64,10 +64,21 @@ jobs:
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
             
+            # Deploy Redis
+            sudo docker rm -f redis || true
+            sudo docker run -d --name redis -p 6379:6379 redis:alpine
+            
+            # Deploy Postgres
+            sudo docker rm -f postgres || true
+            sudo docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=identitydbqa -e POSTGRES_USER=postgres postgres:15-alpine
+            
+            # Wait for Postgres to be ready
+            sleep 10
+            
             # Deploy Identity Service
             sudo docker rm -f identity-service || true
             sudo docker run -d --name identity-service -p 3001:3001 \
-              -e DB_HOST=${{ secrets.DATABASE_PRIVATE_IP }} \
+              -e DB_HOST=172.17.0.1 \
               -e DB_PORT=5432 \
               -e DB_USERNAME=postgres \
               -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
@@ -77,8 +88,8 @@ jobs:
             # Deploy API Gateway
             sudo docker rm -f api-gateway || true
             sudo docker run -d --name api-gateway -p 3000:3000 \
-              -e REDIS_URL=redis://${{ secrets.DATABASE_PRIVATE_IP }}:6379 \
-              -e IDENTITY_SERVICE_URL=http://localhost:3001 \
+              -e REDIS_URL=redis://172.17.0.1:6379 \
+              -e IDENTITY_SERVICE_URL=http://172.17.0.1:3001 \
               ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
 
   load-test:
