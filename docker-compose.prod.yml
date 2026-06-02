@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: scholarship_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123!}
+      POSTGRES_DB: ${DB_NAME:-identitydb}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: scholarship_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  identity-service:
+    image: ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
+    container_name: scholarship_identity
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-postgres123!}
+      - DB_NAME=${DB_NAME:-identitydb}
+      - NODE_ENV=production
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+    ports:
+      - "3001:3001"
+
+  api-gateway:
+    image: ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+    container_name: scholarship_gateway
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379
+      - IDENTITY_SERVICE_URL=http://identity-service:3001
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
