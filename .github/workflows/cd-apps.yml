@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ "QA", "main" ]
-    paths:
-      - 'apps/**'
-      - 'packages/**'
 
 env:
   REGISTRY: ghcr.io
