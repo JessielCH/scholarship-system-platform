@@ -76,7 +76,7 @@ jobs:
             sudo docker run -d --name redis --network micro-net --restart unless-stopped -p 6379:6379 redis:alpine
             
             sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 --env-file .env.qa -e POSTGRES_USER=postgres postgres:15-alpine
+            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} postgres:15-alpine
             
             sleep 15
             
@@ -116,7 +116,7 @@ jobs:
             sudo docker run -d --name redis --network micro-net --restart unless-stopped -p 6379:6379 redis:alpine
             
             sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 --env-file .env.prod -e POSTGRES_USER=postgres postgres:15-alpine
+            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} postgres:15-alpine
             
             sleep 15
             
