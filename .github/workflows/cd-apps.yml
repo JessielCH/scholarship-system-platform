@@ -73,7 +73,7 @@ jobs:
             
             # Deploy Postgres
             sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres --network micro-net --restart always -p 5432:5432 -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=identitydbqa -e POSTGRES_USER=postgres postgres:15-alpine
+            sudo docker run -d --name postgres --network micro-net --restart always -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=identitydbqa -e POSTGRES_USER=postgres postgres:15-alpine
             
             # Wait for Postgres to initialize
             sleep 15
@@ -85,7 +85,7 @@ jobs:
               -e DB_HOST=postgres \
               -e DB_PORT=5432 \
               -e DB_USERNAME=postgres \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e DB_PASSWORD=postgres \
               -e DB_NAME=identitydbqa \
               ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
               
