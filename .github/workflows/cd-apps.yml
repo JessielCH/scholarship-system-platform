@@ -23,11 +23,18 @@ jobs:
             
             # Create isolated env file for QA
             cat << 'EOF' > .env.qa
-            JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}"
-            JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}"
-            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            DB_NAME="${{ secrets.DB_NAME }}"
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
             EOF
+            
+            # Create keys directory and files
+            mkdir -p keys
+            cat << 'EOF' > keys/private.pem
+${{ secrets.JWT_PRIVATE_KEY }}
+EOF
+            cat << 'EOF' > keys/public.pem
+${{ secrets.JWT_PUBLIC_KEY }}
+EOF
             
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
@@ -44,10 +51,10 @@ jobs:
             sleep 15
             
             sudo docker rm -f identity-service || true
-            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -p 3001:3001 --env-file .env.qa -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
+            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -v $(pwd)/keys:/app/keys -p 3001:3001 --env-file .env.qa -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
               
             sudo docker rm -f api-gateway || true
-            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -p 3000:3000 --env-file .env.qa -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -v $(pwd)/keys:/app/keys -p 3000:3000 --env-file .env.qa -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
             
             sudo docker rm -f student-portal || true
             sudo docker run -d --name student-portal --network micro-net --restart unless-stopped -p 3002:3000 -e NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000 ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
@@ -69,11 +76,18 @@ jobs:
             
             # Create isolated env file for PROD
             cat << 'EOF' > .env.prod
-            JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}"
-            JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}"
-            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            DB_NAME="${{ secrets.DB_NAME }}"
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
             EOF
+            
+            # Create keys directory and files
+            mkdir -p keys
+            cat << 'EOF' > keys/private.pem
+${{ secrets.JWT_PRIVATE_KEY }}
+EOF
+            cat << 'EOF' > keys/public.pem
+${{ secrets.JWT_PUBLIC_KEY }}
+EOF
             
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
@@ -90,10 +104,10 @@ jobs:
             sleep 15
             
             sudo docker rm -f identity-service || true
-            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -p 3001:3001 --env-file .env.prod -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
+            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -v $(pwd)/keys:/app/keys -p 3001:3001 --env-file .env.prod -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
               
             sudo docker rm -f api-gateway || true
-            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -p 3000:3000 --env-file .env.prod -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -v $(pwd)/keys:/app/keys -p 3000:3000 --env-file .env.prod -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
 
             sudo docker rm -f student-portal || true
             sudo docker run -d --name student-portal --network micro-net --restart unless-stopped -p 3002:3000 -e NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000 ghcr.io/jessielch/scholarship-system-platform/student-portal:latest

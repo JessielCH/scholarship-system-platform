@@ -1,6 +1,8 @@
 name: CI Pipeline
 
 on:
+  push:
+    branches: [ "develop", "QA", "main", "feat/*" ]
   pull_request:
     branches: [ "develop" ]
 
