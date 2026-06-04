@@ -67,5 +67,17 @@ services:
     ports:
       - "3000:3000"
 
+  student-portal:
+    build:
+      context: ./apps/student-portal
+      dockerfile: Dockerfile
+    container_name: scholarship_student_portal
+    depends_on:
+      - api-gateway
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3002:3000"
+
 volumes:
   postgres_data:

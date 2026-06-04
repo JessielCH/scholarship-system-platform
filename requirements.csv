@@ -1,0 +1,38 @@
+﻿,Practical Requeriments,,
+,,QA,PROD
+1,Mono Repo,x,x
+2,Language programing and framework. 1 // Backend,x,x
+3,Multiplatform // Web- Mobil - Desktop - Roles or permissions,x,x
+4,Microservices at least 10,x,x
+5,Segurity ----Create -- Jump box - EC2 bastion.  Cors -- Firewall Cloudflare- Rate limint - JWT -  etc,x,x
+6,"Use AWS and any PAAS such --- Contenfull - Strapi- Supabase , etc",x,x
+7,Devops -- For microservices -- CI - CD - Githubactions,x,x
+8,Testing ---Load Testing- Unit Testing. - Functional Testing - Backend into CI/CD,x,x
+9,Docker- HUB or Github Registry,x,x
+10,Design Principles - at least 4 such as … SOLID - DRY - KISS -YAGNI - Encapsulation -Cohesion - Low Cupling - GRASP,x,x
+11,DataBase --  at least 3 DB and one must be cache - Differents types.,x,x
+12,ELB - ASG,,x
+13,Terraform,x,x
+14,Apigateway,x,x
+15,"Methods of comunications - at least  3 include Restapi ----, SOAP, Restapi ,  - GRPC -  Webhooks, websocket Graphql , Mandatory Kafka , Rabbitmq and MQTT",x,x
+16,"Architectures at least 2 -- MVC - MVVC -Hexagonal -  -  -Layered - Mandatory Micro services, Event Drive and CQRS",x,x
+17,Monitory - alerting -- Site 24-7 - Prometheus - Grafana,x,x
+18,High availability,x,x
+19,Connect with an on-premise to do backups ,,x
+20,Uses n8n to automate some business processes,,
+21,"Good documation such as Swagger, conventional commit, PR,readmes etc",,
+,,,
+,Optional,,
+,,,
+1,Kubernets,x,x
+2,Manage Cache eather frontend or backend,x,x
+3,Multi region,,x
+4,Multi VPC,x,x
+5,Create automatically Backups DataBase,,x
+6,Create automatically EC2,,x
+7,"Microfrontends , at least 3",x,x
+8,Use go language to simulate the parallel programmig,x,x
+9,Generate a blockchain into your system,x,x
+10,Use an AI agent to analyze or predict results,x,x
+11,Add a payment gateway such as> Stipe - Payla,,
+12,Connect to Active Directory,,
