@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,18 +15,19 @@ export class AuthService {
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.userRepository.findOne({ where: { email } });
-    if (user && await bcrypt.compare(pass, user.passwordHash)) {
+    if (user && (await bcrypt.compare(pass, user.passwordHash))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { passwordHash, ...result } = user;
       return result;
     }
     return null;
   }
 
-  async login(user: any) {
+  login(user: any) {
     const payload = { email: user.email, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: '2h' }),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' })
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
     };
   }
 
@@ -35,7 +36,9 @@ export class AuthService {
       throw new BadRequestException('Email and password are required');
     }
 
-    const existingUser = await this.userRepository.findOne({ where: { email: body.email } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email: body.email },
+    });
     if (existingUser) {
       throw new BadRequestException('Email already in use');
     }
@@ -46,7 +49,7 @@ export class AuthService {
     const user = this.userRepository.create({
       email: body.email,
       passwordHash,
-      role: body.role || 'STUDENT'
+      role: body.role || 'STUDENT',
     });
 
     await this.userRepository.save(user);
