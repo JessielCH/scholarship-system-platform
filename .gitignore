@@ -285,3 +285,6 @@ vite.config.ts.timestamp-*
 .terraform.lock.hcl
 **/.terraform/
 **/.terraform.lock.hcl  
+# Security Keys
+keys/
+*.pem
