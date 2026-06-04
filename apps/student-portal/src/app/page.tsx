@@ -30,7 +30,8 @@ export default function LoginPage() {
       const data = await res.json();
       localStorage.setItem("token", data.access_token);
       router.push("/dashboard");
-      setError(err.message);
+    } catch (err: unknown) {
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
