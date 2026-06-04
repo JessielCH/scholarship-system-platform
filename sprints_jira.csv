@@ -1,0 +1,51 @@
+IssueType,Summary,Description,Labels
+Epic,Domain: Academic (CQRS),"ADR de la implementación CQRS, diseño de arquitectura Hexagonal y reporte de benchmark de Goroutines.",S3
+Task,Programar Academic Engine en Go,"Entregable: Academic Engine Go",S3
+Task,Implementar separación de lectura/escritura (CQRS),"Entregable: CQRS read/write separation",S3
+Task,Configurar Upstash Redis para proyecciones de lectura,"Entregable: Upstash Redis read projections",S3
+Task,Ejecutar benchmark de Goroutines,"Entregable: Goroutine benchmark (25K rankings < 50 ms)",S3
+Epic,Domain: Socioeconomic,"Especificación del Rules Engine, diseño de DB relacional y adaptadores SOAP.",S4
+Task,Crear Socioeconomic Validator en Java/Spring,"Entregable: Java/Spring Validator",S4
+Task,Configurar motor de reglas DroolsLite,"Entregable: DroolsLite rules engine",S4
+Task,Desarrollar stub SOAP para SIISE/RUMI,"Entregable: SIISE/RUMI SOAP stub",S4
+Task,Diseñar esquema PostgreSQL en 3NF,"Entregable: PostgreSQL 3NF schema",S4
+Epic,Domain: Documents,"Diseño del patrón Pipes & Filters, modelo NoSQL y cifrado AES-256.",S5
+Task,Programar Document Service en Java,"Entregable: Document Service Java",S5
+Task,Configurar VPC endpoint para S3,"Entregable: S3 VPC endpoint",S5
+Task,Integrar MongoDB Atlas para metadatos,"Entregable: MongoDB Atlas metadata",S5
+Task,Implementar encriptación AES-256,"Entregable: AES-256 per-student encryption",S5
+Epic,Core: Messaging,"ADR sobre doble broker (Kafka/RabbitMQ), esquema de eventos y contratos gRPC.",S6
+Task,Desplegar clúster quorum de RabbitMQ,"Entregable: RabbitMQ quorum cluster",S6
+Task,Configurar clúster de 3 brokers de Kafka,"Entregable: Kafka 3-broker cluster",S6
+Task,Levantar broker MQTT Mosquitto,"Entregable: MQTT Mosquitto",S6
+Task,Integrar Pub/Sub y gRPC entre Academic y AI,"Entregable: Pub/sub integration, gRPC Academic->AI",S6
+Epic,Core: Audit,"Documentación Event Sourcing, inmutabilidad Hash-Chain y esquema INSERT-only.",S7
+Task,Desarrollar Audit Ledger en Go,"Entregable: Audit Ledger Go",S7
+Task,Crear motor de hash-chaining SHA-256,"Entregable: SHA-256 hash-chaining engine",S7
+Task,Diseñar esquema MariaDB INSERT-only (3NF),"Entregable: MariaDB 3NF schema",S7
+Task,Conectar MariaDB al servicio de auditoría,"Entregable: MariaDB integration",S7
+Epic,Domain: Intelligence,"Modelado de red de grafos, parámetros Random Forest y arquitectura AI Agent.",S8
+Task,Configurar base de datos de grafos Neo4j Aura,"Entregable: Neo4j Aura configuration",S8
+Task,Desarrollar AI Agent en Python FastAPI,"Entregable: AI Agent Python FastAPI",S8
+Task,Entrenar modelo Random Forest,"Entregable: Random Forest training",S8
+Task,Implementar división CQRS predicción/consulta,"Entregable: CQRS prediction/query split",S8
+Epic,Finance & Saga,"Diagrama de Máquina de Estados, contratos GraphQL y Anti-Corruption Layer.",S9
+Task,Crear Saga Orchestrator en Java,"Entregable: Workflow Saga Java",S9
+Task,Desarrollar Financial Service en NestJS,"Entregable: Financial NestJS",S9
+Task,Implementar API Mock de Stripe,"Entregable: Stripe Mock API",S9
+Task,Configurar API GraphQL y WebSockets,"Entregable: GraphQL coordinator API, WS live updates",S9
+Epic,Notifications & n8n,"Arquitectura orientada a eventos, flujos n8n y esquema en Cassandra.",S10
+Task,Desarrollar Notification Hub en Python,"Entregable: Notification Hub Python",S10
+Task,Integrar notificaciones push y Cassandra,"Entregable: MQTT push, Cassandra Astra logging",S10
+Task,Configurar webhooks y flujos de n8n,"Entregable: n8n webhook triggers",S10
+Task,Conectar dashboard vía WebSocket,"Entregable: WebSocket coordinator dashboard",S10
+Epic,Observability & HA,"Plan de Alta Disponibilidad, manual de observabilidad y respaldo On-Premise.",S11
+Task,Configurar stack Prometheus/Grafana/InfluxDB,"Entregable: Prometheus/Grafana/InfluxDB",S11
+Task,Instalar agente Site24x7,"Entregable: Site24x7 external monitoring",S11
+Task,Desplegar ELB y ASG en entorno PROD,"Entregable: ELB + ASG PROD deployment",S11
+Task,Habilitar Multi-AZ RDS y VPN Site-to-Site,"Entregable: Multi-AZ RDS, On-premise VPN backup",S11
+Epic,Testing & Delivery,"Registro ADRs, API en Swagger y reportes finales de rendimiento/seguridad.",S12
+Task,Ejecutar pruebas de carga k6,"Entregable: k6 load tests (25,000 VUs)",S12
+Task,Realizar pruebas de caos,"Entregable: Chaos tests",S12
+Task,Escanear vulnerabilidades con OWASP ZAP,"Entregable: OWASP ZAP scan",S12
+Task,Finalizar Swagger, ADRs y READMEs,"Entregable: Swagger, ADR register, READMEs",S12
