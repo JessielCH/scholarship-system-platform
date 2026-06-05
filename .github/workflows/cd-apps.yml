@@ -2,135 +2,125 @@ name: CD Microservices (Docker & Testing)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "QA", "main" ]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: ["QA", "main"]
 
 jobs:
-  build-and-push:
-    name: Build & Push Docker Images
+  deploy-qa:
+    name: Deploy to QA
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      matrix:
-        service: [api-gateway, identity-service]
-    
+    environment: qa
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/QA') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') }}
     steps:
       - uses: actions/checkout@v4
       
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/jessielch/scholarship-system-platform/${{ matrix.service }}
-          tags: |
-            type=raw,value=latest
-          
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./apps/${{ matrix.service }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  deploy-qa:
-    name: Deploy to QA
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    environment: qa
-    if: github.ref == 'refs/heads/QA'
-    steps:
-      - name: Deploy to QA Edge EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Copy docker-compose
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~/"
+          
+      - name: Deploy to QA Edge EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+        with:
+          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # Create isolated env file for QA
-            echo "JWT_SECRET=\"${{ secrets.JWT_SECRET }}\"" > .env.qa
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.qa
-            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.qa
+            cat << 'EOF' > .env
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
+            JWT_SECRET=qa-secret-key-123
+            EOF
             
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+            mkdir -p keys
+            echo "$JWT_PRIVATE_KEY" > keys/private.pem
+            echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            sudo docker network create micro-net || true
+            # Install Docker Compose v2 as a standalone binary to avoid CLI parsing bugs
+            sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             
-            sudo docker rm -f redis || true
-            sudo docker run -d --name redis --network micro-net --restart unless-stopped -p 6379:6379 redis:alpine
+            # Use docker-compose v2 for declarative, intelligent deployment
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml pull
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
             
-            sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} postgres:15-alpine
-            
-            sleep 15
-            
-            sudo docker rm -f identity-service || true
-            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -p 3001:3001 --env-file .env.qa -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
-              
-            sudo docker rm -f api-gateway || true
-            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -p 3000:3000 --env-file .env.qa -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+            # Clean up old unused apps
+            sudo docker rm -f web-portal || true
+            sudo docker system prune -af
 
   deploy-prod:
     name: Deploy to Production
-    needs: build-and-push
     runs-on: ubuntu-latest
     environment: prod
-    if: github.ref == 'refs/heads/main'
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     steps:
-      - name: Deploy to PROD Edge EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: actions/checkout@v4
+      
+      - name: Copy docker-compose
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~/"
+          
+      - name: Deploy to PROD Edge EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+        with:
+          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # Create isolated env file for PROD
-            echo "JWT_SECRET=\"${{ secrets.JWT_SECRET }}\"" > .env.prod
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.prod
-            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.prod
+            cat << 'EOF' > .env
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
+            JWT_SECRET=prod-secret-key-123
+            EOF
             
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+            mkdir -p keys
+            echo "$JWT_PRIVATE_KEY" > keys/private.pem
+            echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            sudo docker network create micro-net || true
+            # Install Docker Compose v2 as a standalone binary to avoid CLI parsing bugs
+            sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             
-            sudo docker rm -f redis || true
-            sudo docker run -d --name redis --network micro-net --restart unless-stopped -p 6379:6379 redis:alpine
+            # Use docker-compose v2 for declarative, intelligent deployment
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml pull
+            sudo /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
             
-            sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} postgres:15-alpine
-            
-            sleep 15
-            
-            sudo docker rm -f identity-service || true
-            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -p 3001:3001 --env-file .env.prod -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
-              
-            sudo docker rm -f api-gateway || true
-            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -p 3000:3000 --env-file .env.prod -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
+            # Clean up old unused apps
+            sudo docker rm -f web-portal || true
+            sudo docker system prune -af
 
   load-test:
     name: K6 Load Testing
     needs: deploy-qa
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/QA'
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/QA') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') }}
     steps:
       - uses: actions/checkout@v4
       - name: Run k6 load test

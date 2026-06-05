@@ -49,6 +49,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     ports:
       - "3001:3001"
+    volumes:
+      - ./keys:/app/keys
 
   api-gateway:
     image: ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
@@ -66,6 +68,20 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     ports:
       - "3000:3000"
+    volumes:
+      - ./keys:/app/keys
+
+  student-portal:
+    image: ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
+    container_name: scholarship_student_portal
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+    ports:
+      - "80:3000"
 
 volumes:
   postgres_data:

@@ -7,6 +7,7 @@ on:
 
 jobs:
   deploy-infra:
+    if: false
     name: Deploy Infrastructure via Terraform
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || (github.ref == 'refs/heads/QA' && 'qa' || 'develop') }}
