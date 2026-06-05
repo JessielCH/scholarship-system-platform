@@ -49,9 +49,9 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            # Use docker-compose for declarative, intelligent deployment
-            sudo docker-compose -f docker-compose.prod.yml pull
-            sudo docker-compose -f docker-compose.prod.yml up -d
+            # Use docker compose v2 for declarative, intelligent deployment (handles OCI formats)
+            sudo docker compose -f docker-compose.prod.yml pull
+            sudo docker compose -f docker-compose.prod.yml up -d
             
             # Clean up old unused apps
             sudo docker rm -f web-portal || true
@@ -98,9 +98,9 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            # Use docker-compose for declarative, intelligent deployment
-            sudo docker-compose -f docker-compose.prod.yml pull
-            sudo docker-compose -f docker-compose.prod.yml up -d
+            # Use docker compose v2 for declarative, intelligent deployment (handles OCI formats)
+            sudo docker compose -f docker-compose.prod.yml pull
+            sudo docker compose -f docker-compose.prod.yml up -d
             
             # Clean up old unused apps
             sudo docker rm -f web-portal || true
