@@ -5,9 +5,50 @@ on:
   push:
     branches: [ "QA", "main" ]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [api-gateway, identity-service]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/jessielch/scholarship-system-platform/${{ matrix.service }}
+          tags: |
+            type=raw,value=latest
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
   deploy-qa:
     name: Deploy to QA
+    needs: build-and-push
     runs-on: ubuntu-latest
     environment: qa
     if: github.ref == 'refs/heads/QA'
@@ -22,16 +63,12 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Create isolated env file for QA
-            cat << 'EOF' > .env.qa
-            JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}"
-            JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}"
-            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            DB_NAME="${{ secrets.DB_NAME }}"
-            EOF
+            echo "JWT_SECRET=\"${{ secrets.JWT_SECRET }}\"" > .env.qa
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.qa
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.qa
             
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
             
             sudo docker network create micro-net || true
             
@@ -48,12 +85,10 @@ jobs:
               
             sudo docker rm -f api-gateway || true
             sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -p 3000:3000 --env-file .env.qa -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
-            
-            sudo docker rm -f student-portal || true
-            sudo docker run -d --name student-portal --network micro-net --restart unless-stopped -p 3002:3000 -e NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000 ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
 
   deploy-prod:
     name: Deploy to Production
+    needs: build-and-push
     runs-on: ubuntu-latest
     environment: prod
     if: github.ref == 'refs/heads/main'
@@ -68,16 +103,12 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Create isolated env file for PROD
-            cat << 'EOF' > .env.prod
-            JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}"
-            JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}"
-            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            DB_NAME="${{ secrets.DB_NAME }}"
-            EOF
+            echo "JWT_SECRET=\"${{ secrets.JWT_SECRET }}\"" > .env.prod
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.prod
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.prod
             
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
             sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
             
             sudo docker network create micro-net || true
             
@@ -94,9 +125,6 @@ jobs:
               
             sudo docker rm -f api-gateway || true
             sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -p 3000:3000 --env-file .env.prod -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
-
-            sudo docker rm -f student-portal || true
-            sudo docker run -d --name student-portal --network micro-net --restart unless-stopped -p 3002:3000 -e NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000 ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
 
   load-test:
     name: K6 Load Testing

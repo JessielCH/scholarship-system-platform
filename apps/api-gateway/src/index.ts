@@ -1,37 +1,18 @@
 import Fastify from 'fastify';
 import proxy from '@fastify/http-proxy';
 import fastifyRateLimit from '@fastify/rate-limit';
-import cors from '@fastify/cors';
 import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
-import * as fs from 'fs';
-import * as path from 'path';
 
 const fastify = Fastify({ logger: true });
-
-// Load RSA public key
-let publicKey = process.env.JWT_PUBLIC_KEY ? process.env.JWT_PUBLIC_KEY.replace(/\\n/g, '\n') : '';
-if (!publicKey) {
-  try {
-    publicKey = fs.readFileSync(path.join(process.cwd(), 'keys', 'public.pem'), 'utf8');
-  } catch (e) {
-    fastify.log.warn('Public key not found, using fallback or it will fail in prod');
-  }
-}
 
 // Setup Redis for Rate Limiting
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 fastify.register(fastifyRateLimit, {
-  max: 50000, // Increased for massive load testing (25k VUs)
+  max: 100, // default limit 100 requests per minute
   timeWindow: '1 minute',
   redis: redis
-});
-
-// Setup strict CORS
-fastify.register(cors, {
-  origin: process.env.NODE_ENV === 'production' ? 'https://uce.edu.ec' : true,
-  credentials: true,
 });
 
 fastify.decorateRequest('user', null);
@@ -50,7 +31,8 @@ fastify.addHook('preHandler', async (request, reply) => {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
+    const key = process.env.JWT_SECRET || 'super-secret-key-for-qa';
+    const decoded = jwt.verify(token, key, { algorithms: ['HS256'] });
     (request as any).user = decoded;
   } catch (err) {
     fastify.log.error(err);
@@ -59,24 +41,12 @@ fastify.addHook('preHandler', async (request, reply) => {
   }
 });
 
-// Proxy routes mapped to services
-const services = [
-  { prefix: '/auth', envVar: 'IDENTITY_SERVICE_URL', default: 'http://localhost:3001' },
-  { prefix: '/academic', envVar: 'ACADEMIC_SERVICE_URL', default: 'http://localhost:3002' },
-  { prefix: '/socioeconomic', envVar: 'SOCIOECONOMIC_SERVICE_URL', default: 'http://localhost:3003' },
-  { prefix: '/documents', envVar: 'DOCUMENT_SERVICE_URL', default: 'http://localhost:3004' },
-  { prefix: '/audit', envVar: 'AUDIT_SERVICE_URL', default: 'http://localhost:3005' },
-  { prefix: '/saga', envVar: 'SAGA_SERVICE_URL', default: 'http://localhost:3006' },
-  { prefix: '/financial', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3007' },
-];
-
-for (const s of services) {
-  fastify.register(proxy, {
-    upstream: process.env[s.envVar] || s.default,
-    prefix: s.prefix,
-    rewritePrefix: s.prefix
-  });
-}
+// Route proxying to microservices
+fastify.register(proxy, {
+  upstream: process.env.IDENTITY_SERVICE_URL || 'http://localhost:3001',
+  prefix: '/auth',
+  rewritePrefix: '/auth'
+});
 
 const start = async () => {
   try {
