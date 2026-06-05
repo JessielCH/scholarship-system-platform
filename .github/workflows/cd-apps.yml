@@ -14,6 +14,17 @@ jobs:
     environment: qa
     if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/QA') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') }}
     steps:
+      - uses: actions/checkout@v4
+      
+      - name: Copy docker-compose
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~/"
+          
       - name: Deploy to QA Edge EC2
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -27,39 +38,24 @@ jobs:
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # Create isolated env file for QA
-            cat << 'EOF' > .env.qa
+            cat << 'EOF' > .env
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_NAME=${{ secrets.DB_NAME }}
+            NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
+            JWT_SECRET=qa-secret-key-123
             EOF
             
-            # Create keys directory and files
             mkdir -p keys
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
+            # Use docker-compose for declarative, intelligent deployment
+            sudo docker-compose -f docker-compose.prod.yml pull
+            sudo docker-compose -f docker-compose.prod.yml up -d
             
-            sudo docker network create micro-net || true
-            
-            sudo docker rm -f redis || true
-            sudo docker run -d --name redis --network micro-net --restart unless-stopped -p 6379:6379 redis:alpine
-            
-            sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} postgres:15-alpine
-            
-            sleep 15
-            
-            sudo docker rm -f identity-service || true
-            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -v $(pwd)/keys:/app/keys -p 3001:3001 --env-file .env.qa -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
-              
-            sudo docker rm -f api-gateway || true
-            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -v $(pwd)/keys:/app/keys -p 3000:3000 --env-file .env.qa -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
-            
-            sudo docker rm -f student-portal || true
-            sudo docker run -d --name student-portal --network micro-net --restart unless-stopped -p 3002:3000 -e NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000 ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
+            # Clean up old unused apps
+            sudo docker rm -f web-portal || true
+            sudo docker system prune -af
 
   deploy-prod:
     name: Deploy to Production
@@ -67,6 +63,17 @@ jobs:
     environment: prod
     if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     steps:
+      - uses: actions/checkout@v4
+      
+      - name: Copy docker-compose
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~/"
+          
       - name: Deploy to PROD Edge EC2
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -80,39 +87,24 @@ jobs:
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # Create isolated env file for PROD
-            cat << 'EOF' > .env.prod
+            cat << 'EOF' > .env
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_NAME=${{ secrets.DB_NAME }}
+            NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
+            JWT_SECRET=prod-secret-key-123
             EOF
             
-            # Create keys directory and files
             mkdir -p keys
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
-            sudo docker pull ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
+            # Use docker-compose for declarative, intelligent deployment
+            sudo docker-compose -f docker-compose.prod.yml pull
+            sudo docker-compose -f docker-compose.prod.yml up -d
             
-            sudo docker network create micro-net || true
-            
-            sudo docker rm -f redis || true
-            sudo docker run -d --name redis --network micro-net --restart unless-stopped -p 6379:6379 redis:alpine
-            
-            sudo docker rm -f postgres || true
-            sudo docker run -d --name postgres --network micro-net --restart unless-stopped -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }} -e POSTGRES_DB=${{ secrets.DB_NAME }} postgres:15-alpine
-            
-            sleep 15
-            
-            sudo docker rm -f identity-service || true
-            sudo docker run -d --name identity-service --network micro-net --restart unless-stopped -v $(pwd)/keys:/app/keys -p 3001:3001 --env-file .env.prod -e PORT=3001 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USERNAME=postgres ghcr.io/jessielch/scholarship-system-platform/identity-service:latest
-              
-            sudo docker rm -f api-gateway || true
-            sudo docker run -d --name api-gateway --network micro-net --restart unless-stopped -v $(pwd)/keys:/app/keys -p 3000:3000 --env-file .env.prod -e PORT=3000 -e REDIS_URL=redis://redis:6379 -e IDENTITY_SERVICE_URL=http://identity-service:3001 ghcr.io/jessielch/scholarship-system-platform/api-gateway:latest
-
-            sudo docker rm -f student-portal || true
-            sudo docker run -d --name student-portal --network micro-net --restart unless-stopped -p 3002:3000 -e NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000 ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
+            # Clean up old unused apps
+            sudo docker rm -f web-portal || true
+            sudo docker system prune -af
 
   load-test:
     name: K6 Load Testing
