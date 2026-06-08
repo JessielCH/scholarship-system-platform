@@ -15,7 +15,7 @@ import { User } from './users/user.entity';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'identitydbqa',
       entities: [User],
-      synchronize: process.env.NODE_ENV !== 'production', // Use carefully in PROD
+      synchronize: true, // Always true for university/demo environments without migrations
     }),
     TypeOrmModule.forFeature([User]),
     AuthModule,
