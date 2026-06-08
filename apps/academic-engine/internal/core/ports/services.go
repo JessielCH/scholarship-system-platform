@@ -2,15 +2,14 @@ package ports
 
 import "github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/domain"
 
-// RankingService defines the business logic for calculating scholarships.
-type RankingService interface {
-	// ProcessAll evaluates all records in the system and computes scholarships.
+// CommandService defines the business logic for mutating state (calculating rankings, seeding).
+type CommandService interface {
 	ProcessAll() error
-	// CalculateRankings evaluates a specific subset of records.
 	CalculateRankings(records []domain.AcademicRecord) ([]domain.RankingScore, error)
+	SeedDatabase(count int) error
 }
 
-// MockSeeder defines a service to generate mock data for UCE.
-type MockSeeder interface {
-	SeedDatabase(count int) error
+// QueryService defines the business logic for querying state.
+type QueryService interface {
+	GetRankingStatus(recordID string) (*domain.RankingScore, error)
 }

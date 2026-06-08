@@ -9,7 +9,7 @@ export default function AcademicEngineUI() {
   const handleSeed = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://127.0.0.1:8081/api/v1/academic/seed", {
+      const res = await fetch("http://127.0.0.1:8081/api/v1/commands/academic/seed", {
         method: "POST",
         headers: { "X-User-Role": "ADMIN" },
       });
@@ -24,7 +24,7 @@ export default function AcademicEngineUI() {
   const handleProcess = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://127.0.0.1:8081/api/v1/academic/process", {
+      const res = await fetch("http://127.0.0.1:8081/api/v1/commands/academic/process", {
         method: "POST",
         headers: { "X-User-Role": "ADMIN" },
       });
@@ -39,7 +39,7 @@ export default function AcademicEngineUI() {
   const checkStatus = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://127.0.0.1:8081/api/v1/academic/status?record_id=${recordId}`, {
+      const res = await fetch(`http://127.0.0.1:8081/api/v1/queries/academic/status?record_id=${recordId}`, {
         method: "GET",
         headers: { "X-User-Role": "STUDENT" },
       });
