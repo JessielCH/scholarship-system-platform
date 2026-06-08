@@ -10,24 +10,23 @@ import (
 )
 
 func main() {
-	// Initialize Repository
+	// Initialize Repository (Memory Repo implements both Command and Query ports)
 	repo := repositories.NewMemoryRepository()
 
-	// Initialize Services
-	mockSeeder := services.NewMockSeeder(repo)
-	rankingService := services.NewRankingService(repo)
+	// Initialize CQRS Services
+	cmdService := services.NewCommandService(repo, repo)
+	queryService := services.NewQueryService(repo)
 
 	// Initialize Handlers
-	httpHandler := handlers.NewHttpHandler(rankingService, mockSeeder, repo)
+	httpHandler := handlers.NewHttpHandler(cmdService, queryService)
 
 	// Setup Router
 	mux := http.NewServeMux()
 	httpHandler.RegisterRoutes(mux)
 
-	// In development, listen on 127.0.0.1 (localhost) for security as per secure web rules.
-	// Production may use 0.0.0.0 depending on Docker/AWS setup.
+	// Secure listener configuration
 	addr := "127.0.0.1:8081"
-	log.Printf("Academic Engine server starting on http://%s", addr)
+	log.Printf("Academic Engine server (CQRS) starting on http://%s", addr)
 
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
