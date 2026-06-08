@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
   push:
     branches: [ "develop", "QA", "main" ]
+    paths:
+      - 'infrastructure/terraform/**'
 
 jobs:
   deploy-infra:
-    if: false
     name: Deploy Infrastructure via Terraform
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || (github.ref == 'refs/heads/QA' && 'qa' || 'develop') }}
