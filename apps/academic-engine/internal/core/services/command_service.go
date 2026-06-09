@@ -45,7 +45,7 @@ func (s *commandService) SeedDatabase(count int) error {
 		semester := mrand.Intn(8) + 3
 
 		record := domain.AcademicRecord{
-			ID:                 generateUUID(),
+			ID:                 fmt.Sprintf("UID-%06d", i),
 			StudentID:          fmt.Sprintf("UID-%06d", i),
 			Faculty:            fac,
 			Career:             fac + " General",
