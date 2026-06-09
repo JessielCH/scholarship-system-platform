@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/domain"
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/ports"
 )
 
@@ -25,6 +26,7 @@ func (h *HttpHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/commands/academic/process", h.RequireRole("ADMIN", h.handleProcess))
 	// Query routes
 	mux.HandleFunc("/api/v1/queries/academic/status", h.RequireRole("STUDENT", h.handleStatus))
+	mux.HandleFunc("/api/v1/queries/academic/rankings", h.RequireRole("ADMIN", h.handleGetAllRankings))
 }
 
 // RequireRole is a simple middleware to simulate RBAC logic from the Identity Service.
@@ -98,4 +100,31 @@ func (h *HttpHandler) handleStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(score)
+}
+
+func (h *HttpHandler) handleGetAllRankings(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rankings, err := h.queryService.GetAllRankings()
+	if err != nil {
+		http.Error(w, "Error fetching rankings", http.StatusInternalServerError)
+		return
+	}
+
+	facultyFilter := r.URL.Query().Get("faculty")
+	if facultyFilter != "" {
+		var filtered []domain.RankingScore
+		for _, rnk := range rankings {
+			if rnk.Faculty == facultyFilter {
+				filtered = append(filtered, rnk)
+			}
+		}
+		rankings = filtered
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(rankings)
 }

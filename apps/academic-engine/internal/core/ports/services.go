@@ -12,4 +12,5 @@ type CommandService interface {
 // QueryService defines the business logic for querying state.
 type QueryService interface {
 	GetRankingStatus(recordID string) (*domain.RankingScore, error)
+	GetAllRankings() ([]domain.RankingScore, error)
 }

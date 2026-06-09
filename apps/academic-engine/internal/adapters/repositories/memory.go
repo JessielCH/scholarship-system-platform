@@ -63,3 +63,13 @@ func (r *MemoryRepository) GetRanking(recordID string) (*domain.RankingScore, er
 	}
 	return nil, domain.ErrRecordNotFound
 }
+
+func (r *MemoryRepository) GetAllRankings() ([]domain.RankingScore, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []domain.RankingScore
+	for _, rank := range r.rankings {
+		result = append(result, rank)
+	}
+	return result, nil
+}
