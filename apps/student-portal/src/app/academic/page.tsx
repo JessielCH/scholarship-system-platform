@@ -229,7 +229,7 @@ export default function AcademicEngineUI() {
                       <tr key={idx} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.StudentID}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.Faculty}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{row.Score.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{(row.Score || 0).toFixed(2)}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${row.IsApproved ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                             {row.IsApproved ? "APPROVED" : "DENIED"}
