@@ -11,7 +11,7 @@ jobs:
   deploy-infra:
     name: Deploy Infrastructure via Terraform
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || (github.ref == 'refs/heads/QA' && 'qa' || 'develop') }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'qa' }}
     steps:
       - uses: actions/checkout@v4
       
@@ -20,10 +20,8 @@ jobs:
         run: |
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "env_name=prod" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" = "refs/heads/QA" ]; then
-            echo "env_name=qa" >> $GITHUB_OUTPUT
           else
-            echo "env_name=develop" >> $GITHUB_OUTPUT
+            echo "env_name=qa" >> $GITHUB_OUTPUT
           fi
           
       - name: Configure AWS Credentials

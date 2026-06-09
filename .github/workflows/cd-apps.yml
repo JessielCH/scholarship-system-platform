@@ -86,6 +86,11 @@ jobs:
             sudo chmod +x /usr/local/bin/docker-compose
             sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             
+            # Ensure Docker is installed on private nodes
+            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+            done
+            
             # Database Node
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml up -d
@@ -181,6 +186,11 @@ jobs:
             sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
             sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+            
+            # Ensure Docker is installed on private nodes
+            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+            done
             
             # Database Node
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
