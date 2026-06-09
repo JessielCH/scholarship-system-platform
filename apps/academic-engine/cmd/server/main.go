@@ -14,6 +14,20 @@ import (
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/services"
 )
 
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-User-Role")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	// Initialize Repository
 	// For SS-21: Use MemoryRepository (CQRS with in-memory storage)
@@ -69,7 +83,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         addr,
-		Handler:      mux,
+		Handler:      enableCORS(mux),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
