@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  academic-engine:
+    image: ghcr.io/jessielch/scholarship-system-platform/academic-engine:latest
+    container_name: scholarship_academic_engine
+    restart: unless-stopped
+    environment:
+      - USE_REDIS=true
+      - REDIS_URL=redis://${DATABASE_PRIVATE_IP}:6379
+      - PORT=8081
+    ports:
+      - "8081:8081"

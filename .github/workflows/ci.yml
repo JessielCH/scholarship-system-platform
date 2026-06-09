@@ -55,7 +55,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [api-gateway, identity-service, student-portal]
+        service: [api-gateway, identity-service, student-portal, academic-engine]
     
     steps:
       - uses: actions/checkout@v4
