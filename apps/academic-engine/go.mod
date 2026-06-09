@@ -1,6 +1,6 @@
 module github.com/JessielCH/scholarship-system-platform/apps/academic-engine
 
-go 1.26.2
+go 1.22
 
 require github.com/redis/go-redis/v9 v9.5.1
 
