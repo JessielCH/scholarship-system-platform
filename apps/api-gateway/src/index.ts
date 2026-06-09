@@ -38,7 +38,7 @@ fastify.decorateRequest('user', null);
 
 fastify.addHook('preHandler', async (request, reply) => {
   // Public routes mapping (e.g. Identity Service login/register)
-  if (request.url.startsWith('/auth')) {
+  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth')) {
     return;
   }
 
@@ -61,20 +61,23 @@ fastify.addHook('preHandler', async (request, reply) => {
 
 // Proxy routes mapped to services
 const services = [
-  { prefix: '/auth', envVar: 'IDENTITY_SERVICE_URL', default: 'http://localhost:3001' },
-  { prefix: '/academic', envVar: 'ACADEMIC_SERVICE_URL', default: 'http://localhost:3002' },
-  { prefix: '/socioeconomic', envVar: 'SOCIOECONOMIC_SERVICE_URL', default: 'http://localhost:3003' },
-  { prefix: '/documents', envVar: 'DOCUMENT_SERVICE_URL', default: 'http://localhost:3004' },
-  { prefix: '/audit', envVar: 'AUDIT_SERVICE_URL', default: 'http://localhost:3005' },
-  { prefix: '/saga', envVar: 'SAGA_SERVICE_URL', default: 'http://localhost:3006' },
-  { prefix: '/financial', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3007' },
+  { prefix: '/api/auth', envVar: 'IDENTITY_SERVICE_URL', default: 'http://localhost:3001', rewritePrefix: '/auth' },
+  { prefix: '/api/v1/queries/academic', envVar: 'ACADEMIC_SERVICE_URL', default: 'http://localhost:3002', rewritePrefix: '/api/v1/queries/academic' },
+  { prefix: '/api/v1/commands/academic', envVar: 'ACADEMIC_SERVICE_URL', default: 'http://localhost:3002', rewritePrefix: '/api/v1/commands/academic' },
+  { prefix: '/auth', envVar: 'IDENTITY_SERVICE_URL', default: 'http://localhost:3001', rewritePrefix: '/auth' },
+  { prefix: '/academic', envVar: 'ACADEMIC_SERVICE_URL', default: 'http://localhost:3002', rewritePrefix: '/academic' },
+  { prefix: '/socioeconomic', envVar: 'SOCIOECONOMIC_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/socioeconomic' },
+  { prefix: '/documents', envVar: 'DOCUMENT_SERVICE_URL', default: 'http://localhost:3004', rewritePrefix: '/documents' },
+  { prefix: '/audit', envVar: 'AUDIT_SERVICE_URL', default: 'http://localhost:3005', rewritePrefix: '/audit' },
+  { prefix: '/saga', envVar: 'SAGA_SERVICE_URL', default: 'http://localhost:3006', rewritePrefix: '/saga' },
+  { prefix: '/financial', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3007', rewritePrefix: '/financial' },
 ];
 
 for (const s of services) {
   fastify.register(proxy, {
     upstream: process.env[s.envVar] || s.default,
     prefix: s.prefix,
-    rewritePrefix: s.prefix
+    rewritePrefix: s.rewritePrefix || s.prefix
   });
 }
 

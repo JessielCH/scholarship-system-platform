@@ -8,6 +8,7 @@ services:
       - PORT=3000
       - REDIS_URL=redis://${DATABASE_PRIVATE_IP}:6379
       - IDENTITY_SERVICE_URL=http://${SECURITY_PRIVATE_IP}:3001
+      - ACADEMIC_SERVICE_URL=http://${CORE_PRIVATE_IP}:8081
       - JWT_SECRET=${JWT_SECRET}
     ports:
       - "3000:3000"
@@ -20,7 +21,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - API_URL=http://${CORE_PRIVATE_IP}:8081
+      - API_URL=http://api-gateway:3000
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     ports:
       - "80:3000"
