@@ -4,7 +4,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://api-gateway:3000'}/:path*`,
+        destination: `${process.env.API_URL || 'http://academic-engine:8081'}/api/:path*`,
       },
     ];
   },
