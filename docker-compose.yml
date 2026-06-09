@@ -41,7 +41,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://academic-engine:8081
+      - API_URL=http://academic-engine:8081
     networks:
       - scholarship-net
     depends_on:

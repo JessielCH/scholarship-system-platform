@@ -16,6 +16,12 @@ export default function LoginPage() {
     setError("");
 
     try {
+      // MOCK LOGIN FOR SPRINT 23 (API Gateway / Identity not ready yet)
+      if (email === "admin@uce.edu.ec" && password === "admin") {
+         localStorage.setItem("token", "mock-admin-token");
+         router.push("/academic");
+         return;
+      }
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
