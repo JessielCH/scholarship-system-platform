@@ -2,14 +2,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface StatusResult {
+  error?: string;
+  StudentID?: string;
+  Faculty?: string;
+  IsApproved?: boolean;
+  Type?: string;
+  Score?: number;
+}
+
 export default function AcademicEngineUI() {
   const router = useRouter();
   const [recordId, setRecordId] = useState("UID-000001");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<StatusResult | null>(null);
   const [loading, setLoading] = useState(false);
   
   // Directory State
-  const [directory, setDirectory] = useState<any[]>([]);
+  const [directory, setDirectory] = useState<StatusResult[]>([]);
   const [facultyFilter, setFacultyFilter] = useState("");
   const [onlyApproved, setOnlyApproved] = useState(false);
   const [dirLoading, setDirLoading] = useState(false);
@@ -28,7 +37,7 @@ export default function AcademicEngineUI() {
       } else {
         setResult({ error: "Application not found or not processed yet." });
       }
-    } catch (e) {
+    } catch {
       setResult({ error: "Network error checking status." });
     }
     setLoading(false);
@@ -49,7 +58,7 @@ export default function AcademicEngineUI() {
         const data = await res.json();
         setDirectory(data || []);
       }
-    } catch (e) {
+    } catch {
       alert("Error loading directory");
     }
     setDirLoading(false);
