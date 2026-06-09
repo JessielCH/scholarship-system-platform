@@ -12,5 +12,6 @@ type CommandRepository interface {
 type QueryRepository interface {
 	GetRecordsByFacultyAndCareer(faculty, career string) ([]domain.AcademicRecord, error)
 	GetRanking(recordID string) (*domain.RankingScore, error)
+	GetAllRankings() ([]domain.RankingScore, error)
 	GetAllRecords() ([]domain.AcademicRecord, error)
 }

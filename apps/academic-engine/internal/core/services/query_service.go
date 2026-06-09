@@ -16,3 +16,7 @@ func NewQueryService(repo ports.QueryRepository) ports.QueryService {
 func (s *queryService) GetRankingStatus(recordID string) (*domain.RankingScore, error) {
 	return s.repo.GetRanking(recordID)
 }
+
+func (s *queryService) GetAllRankings() ([]domain.RankingScore, error) {
+	return s.repo.GetAllRankings()
+}

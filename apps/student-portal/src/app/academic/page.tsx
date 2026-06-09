@@ -2,9 +2,15 @@
 import { useState } from "react";
 
 export default function AcademicEngineUI() {
-  const [recordId, setRecordId] = useState("UID-000000");
+  const [recordId, setRecordId] = useState("UID-000001");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Directory State
+  const [directory, setDirectory] = useState<any[]>([]);
+  const [facultyFilter, setFacultyFilter] = useState("");
+  const [onlyApproved, setOnlyApproved] = useState(false);
+  const [dirLoading, setDirLoading] = useState(false);
 
   const handleSeed = async () => {
     setLoading(true);
@@ -53,6 +59,29 @@ export default function AcademicEngineUI() {
     }
     setLoading(false);
   };
+
+  const loadDirectory = async () => {
+    setDirLoading(true);
+    try {
+      let url = "http://127.0.0.1:8081/api/v1/queries/academic/rankings";
+      if (facultyFilter) {
+        url += `?faculty=${encodeURIComponent(facultyFilter)}`;
+      }
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { "X-User-Role": "ADMIN" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDirectory(data || []);
+      }
+    } catch (e) {
+      alert("Error cargando el directorio");
+    }
+    setDirLoading(false);
+  };
+
+  const filteredDirectory = directory.filter(item => onlyApproved ? item.IsApproved : true);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
@@ -156,6 +185,87 @@ export default function AcademicEngineUI() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Directory Panel */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 transform transition-all hover:scale-[1.01]">
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
+            <h2 className="text-xl font-bold text-white flex items-center">
+              <svg className="w-6 h-6 mr-2 text-purple-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+              Directorio de Becas (Coordinación)
+            </h2>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-end">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Filtrar por Facultad (Opcional)</label>
+                <select 
+                  value={facultyFilter}
+                  onChange={(e) => setFacultyFilter(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-700"
+                >
+                  <option value="">Todas las facultades</option>
+                  <option value="Artes">Artes</option>
+                  <option value="Ciencias Médicas">Ciencias Médicas</option>
+                  <option value="Ingeniería Ciencias Físicas y Matemática">Ingeniería Ciencias Físicas y Matemática</option>
+                  <option value="Jurisprudencia, Ciencias Políticas y Sociales">Jurisprudencia, Ciencias Políticas y Sociales</option>
+                </select>
+              </div>
+              <div className="flex items-center pb-3">
+                <input 
+                  type="checkbox" 
+                  id="onlyApproved" 
+                  checked={onlyApproved}
+                  onChange={(e) => setOnlyApproved(e.target.checked)}
+                  className="h-5 w-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                />
+                <label htmlFor="onlyApproved" className="ml-2 text-gray-700 font-medium">Solo Aprobados</label>
+              </div>
+              <button 
+                onClick={loadDirectory} 
+                disabled={dirLoading}
+                className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md transition duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+              >
+                {dirLoading ? "Cargando..." : "Cargar Directorio"}
+              </button>
+            </div>
+
+            {filteredDirectory.length > 0 && (
+              <div className="mt-6 overflow-x-auto rounded-xl border border-gray-200 shadow-inner">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estudiante ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Facultad</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puntaje</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Beca</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredDirectory.slice(0, 100).map((row, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.StudentID}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.Faculty}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{row.Score.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${row.IsApproved ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {row.IsApproved ? "APROBADO" : "DENEGADO"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-medium">{row.Type || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filteredDirectory.length > 100 && (
+                  <div className="bg-gray-50 px-6 py-3 text-sm text-gray-500 text-center border-t border-gray-200">
+                    Mostrando primeros 100 resultados de {filteredDirectory.length} totales.
+                  </div>
+                )}
               </div>
             )}
           </div>
