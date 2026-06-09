@@ -15,7 +15,7 @@ export default function AcademicEngineUI() {
   const handleSeed = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://127.0.0.1:8081/api/v1/commands/academic/seed", {
+      const res = await fetch("/api/v1/commands/academic/seed", {
         method: "POST",
         headers: { "X-User-Role": "ADMIN" },
       });
@@ -30,7 +30,7 @@ export default function AcademicEngineUI() {
   const handleProcess = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://127.0.0.1:8081/api/v1/commands/academic/process", {
+      const res = await fetch("/api/v1/commands/academic/process", {
         method: "POST",
         headers: { "X-User-Role": "ADMIN" },
       });
@@ -45,7 +45,7 @@ export default function AcademicEngineUI() {
   const checkStatus = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://127.0.0.1:8081/api/v1/queries/academic/status?record_id=${recordId}`, {
+      const res = await fetch(`/api/v1/queries/academic/status?record_id=${recordId}`, {
         method: "GET",
         headers: { "X-User-Role": "STUDENT" },
       });
@@ -63,7 +63,7 @@ export default function AcademicEngineUI() {
   const loadDirectory = async () => {
     setDirLoading(true);
     try {
-      let url = "http://127.0.0.1:8081/api/v1/queries/academic/rankings";
+      let url = "/api/v1/queries/academic/rankings";
       if (facultyFilter) {
         url += `?faculty=${encodeURIComponent(facultyFilter)}`;
       }

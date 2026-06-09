@@ -38,7 +38,7 @@ func NewCommandService(cmdRepo ports.CommandRepository, queryRepo ports.QueryRep
 
 func (s *commandService) SeedDatabase(count int) error {
 	for i := 0; i < count; i++ {
-		fac := uceFaculties[mrand.Intn(len(uceFaculties))]
+		fac := uceFaculties[i%len(uceFaculties)]
 		gpa := math.Round((10.0+mrand.Float64()*10.0)*100) / 100
 		vuln := math.Round((mrand.Float64()*100.0)*100) / 100
 
