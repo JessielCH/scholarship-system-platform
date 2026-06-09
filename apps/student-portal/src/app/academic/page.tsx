@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AcademicEngineUI() {
+  const router = useRouter();
   const [recordId, setRecordId] = useState("UID-000001");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -87,8 +89,14 @@ export default function AcademicEngineUI() {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-4xl mx-auto space-y-8">
         
-        <div className="text-center">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">
+        <div className="text-center relative">
+          <button 
+            onClick={() => { localStorage.removeItem("token"); router.push("/"); }}
+            className="absolute right-0 top-0 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-sm font-semibold transition shadow-sm"
+          >
+            Cerrar Sesión
+          </button>
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl pt-4">
             Motor Académico <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">UCE</span>
           </h1>
           <p className="mt-4 text-lg text-gray-500">
@@ -207,11 +215,28 @@ export default function AcademicEngineUI() {
                   onChange={(e) => setFacultyFilter(e.target.value)}
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-700"
                 >
-                  <option value="">Todas las facultades</option>
+                  <option value="">-- TODAS LAS FACULTADES --</option>
+                  <option value="Agronomía">Agronomía</option>
+                  <option value="Arquitectura y Urbanismo">Arquitectura y Urbanismo</option>
                   <option value="Artes">Artes</option>
+                  <option value="Ciencias Administrativas">Ciencias Administrativas</option>
+                  <option value="Ciencias Agrícolas">Ciencias Agrícolas</option>
+                  <option value="Ciencias Biológicas">Ciencias Biológicas</option>
+                  <option value="Ciencias de la Discapacidad">Ciencias de la Discapacidad</option>
+                  <option value="Ciencias Económicas">Ciencias Económicas</option>
                   <option value="Ciencias Médicas">Ciencias Médicas</option>
+                  <option value="Ciencias Psicológicas">Ciencias Psicológicas</option>
+                  <option value="Ciencias Químicas">Ciencias Químicas</option>
+                  <option value="Ciencias Sociales y Humanas">Ciencias Sociales y Humanas</option>
+                  <option value="Comunicación Social">Comunicación Social</option>
+                  <option value="Cultura Física">Cultura Física</option>
+                  <option value="Filosofía, Letras y Ciencias de la Educación">Filosofía, Letras y Ciencias de la Educación</option>
                   <option value="Ingeniería Ciencias Físicas y Matemática">Ingeniería Ciencias Físicas y Matemática</option>
+                  <option value="Ingeniería en Geología, Minas, Petróleos y Ambiental">Ingeniería en Geología, Minas, Petróleos y Ambiental</option>
+                  <option value="Ingeniería Química">Ingeniería Química</option>
                   <option value="Jurisprudencia, Ciencias Políticas y Sociales">Jurisprudencia, Ciencias Políticas y Sociales</option>
+                  <option value="Medicina Veterinaria y Zootecnia">Medicina Veterinaria y Zootecnia</option>
+                  <option value="Odontología">Odontología</option>
                 </select>
               </div>
               <div className="flex items-center pb-3">
