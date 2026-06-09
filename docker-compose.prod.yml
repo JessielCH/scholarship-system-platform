@@ -71,6 +71,20 @@ services:
     volumes:
       - ./keys:/app/keys
 
+  academic-engine:
+    image: ghcr.io/jessielch/scholarship-system-platform/academic-engine:latest
+    container_name: scholarship_academic_engine
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - USE_REDIS=true
+      - REDIS_URL=redis://redis:6379
+      - PORT=8081
+    ports:
+      - "8081:8081"
+
   student-portal:
     image: ghcr.io/jessielch/scholarship-system-platform/student-portal:latest
     container_name: scholarship_student_portal
@@ -79,6 +93,7 @@ services:
       - api-gateway
     environment:
       - NODE_ENV=production
+      - API_URL=http://academic-engine:8081
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
     ports:
       - "80:3000"
