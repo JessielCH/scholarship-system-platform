@@ -77,6 +77,8 @@ jobs:
             export DB_NAME=${{ secrets.DB_NAME }}
             export NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
             export JWT_SECRET=qa-secret-key-123
+            export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
+            export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             
             mkdir -p keys
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
@@ -178,6 +180,8 @@ jobs:
             export DB_NAME=${{ secrets.DB_NAME }}
             export NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
             export JWT_SECRET=prod-secret-key-123
+            export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
+            export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             
             mkdir -p keys
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
