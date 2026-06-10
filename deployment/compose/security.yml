@@ -13,6 +13,8 @@ services:
       - DB_NAME=${DB_NAME:-identitydb}
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
     ports:
       - "3001:3001"
     volumes:

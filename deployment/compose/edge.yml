@@ -10,6 +10,7 @@ services:
       - IDENTITY_SERVICE_URL=http://${SECURITY_PRIVATE_IP}:3001
       - ACADEMIC_SERVICE_URL=http://${CORE_PRIVATE_IP}:8081
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
     ports:
       - "3000:3000"
     volumes:
