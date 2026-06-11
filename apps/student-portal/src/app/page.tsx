@@ -29,7 +29,20 @@ export default function LoginPage() {
 
       const data = await res.json();
       localStorage.setItem("token", data.access_token);
-      router.push("/dashboard");
+
+      try {
+        const payloadBase64 = data.access_token.split(".")[1];
+        const decodedJson = atob(payloadBase64);
+        const payload = JSON.parse(decodedJson);
+        
+        if (payload.role === "ADMIN") {
+          router.push("/academic");
+        } else {
+          router.push("/dashboard");
+        }
+      } catch (e) {
+        router.push("/dashboard");
+      }
     } catch (err: unknown) {
       setError((err as Error).message);
     } finally {
