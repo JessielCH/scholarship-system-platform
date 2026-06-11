@@ -20,9 +20,7 @@ export default function Dashboard() {
       const decodedJson = atob(payloadBase64);
       const payload = JSON.parse(decodedJson);
 
-      // eslint-disable-next-line
       setRole(payload.role || "STUDENT");
-      // eslint-disable-next-line
       setEmail(payload.email || "");
     } catch (e) {
       console.error("Invalid token", e);
@@ -30,7 +28,7 @@ export default function Dashboard() {
     }
   }, [router]);
 
-  const [academicStatus, setAcademicStatus] = useState<any>(null);
+  const [academicStatus, setAcademicStatus] = useState<Record<string, unknown> | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
 
   useEffect(() => {

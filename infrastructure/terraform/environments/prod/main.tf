@@ -75,21 +75,21 @@ module "alb" {
 }
 
 module "asg_core" {
-  source             = "../../modules/asg"
-  environment        = "prod"
-  ami_id             = data.aws_ami.ubuntu.id
-  instance_type      = "t2.micro"
-  subnet_ids         = module.vpc.private_subnet_ids
+  source        = "../../modules/asg"
+  environment   = "prod"
+  ami_id        = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  subnet_ids    = module.vpc.private_subnet_ids
   security_group_ids = [
     module.security_groups.edge_sg_id,
     module.security_groups.core_sg_id,
     module.security_groups.compute_sg_id
   ]
-  target_group_arn   = module.alb.target_group_arn
-  user_data          = local.docker_install_script
-  min_size           = 2
-  max_size           = 4
-  desired_capacity   = 2
+  target_group_arn = module.alb.target_group_arn
+  user_data        = local.docker_install_script
+  min_size         = 2
+  max_size         = 4
+  desired_capacity = 2
 }
 
 module "ec2_database" {
