@@ -35,7 +35,6 @@ locals {
 
     # Setup Environment Variables for Docker Compose
     echo "DB_PASSWORD=${var.db_password}" > .env
-    echo "DB_NAME=${var.db_name}" >> .env
     echo "JWT_SECRET=${var.jwt_secret}" >> .env
     
     mkdir -p keys
