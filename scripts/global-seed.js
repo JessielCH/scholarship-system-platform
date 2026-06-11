@@ -41,11 +41,11 @@ const uceFaculties = [
 async function seed() {
   console.log('Starting Global Seeder...');
 
-  const pgClient = new Client({
+  const initClient = new Client({
     host: DB_HOST,
     user: DB_USER,
     password: DB_PASSWORD,
-    database: DB_NAME,
+    database: 'postgres',
     port: DB_PORT
   });
 
@@ -54,9 +54,30 @@ async function seed() {
     port: REDIS_PORT
   });
 
+  let pgClient;
   try {
+    await initClient.connect();
+    console.log(`Checking if database "${DB_NAME}" exists...`);
+    const res = await initClient.query(`SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'`);
+    if (res.rowCount === 0) {
+      console.log(`Database "${DB_NAME}" does not exist. Creating it automatically...`);
+      await initClient.query(`CREATE DATABASE "${DB_NAME}"`);
+      console.log(`Database "${DB_NAME}" created successfully.`);
+    } else {
+      console.log(`Database "${DB_NAME}" already exists.`);
+    }
+    await initClient.end();
+
+    pgClient = new Client({
+      host: DB_HOST,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      database: DB_NAME,
+      port: DB_PORT
+    });
+
     await pgClient.connect();
-    console.log('Connected to PostgreSQL (identitydb)');
+    console.log(`Connected to PostgreSQL (${DB_NAME})`);
 
     // Generate one hash to reuse for all synthetic students to save massive CPU time
     console.log('Generating shared bcrypt hash for "student123"...');
@@ -146,7 +167,9 @@ async function seed() {
   } catch (err) {
     console.error('Error during seeding:', err);
   } finally {
-    await pgClient.end();
+    if (pgClient) {
+      await pgClient.end();
+    }
     redisClient.disconnect();
   }
 }
