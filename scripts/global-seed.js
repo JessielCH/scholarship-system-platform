@@ -142,7 +142,7 @@ async function seed() {
     const loginRes = await fetch(`${API_GATEWAY}/api/auth/login`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({email: 'admin1@uce.edu.ec', password: 'admin123'})
+      body: JSON.stringify({email: 'admin@uce.edu.ec', password: 'admin123'})
     });
     
     if (!loginRes.ok) {
