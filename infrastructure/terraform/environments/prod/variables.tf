@@ -4,11 +4,6 @@ variable "db_password" {
   default   = "postgres123!"
 }
 
-variable "db_name" {
-  type    = string
-  default = "identitydb"
-}
-
 variable "jwt_secret" {
   type      = string
   sensitive = true

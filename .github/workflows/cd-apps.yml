@@ -74,7 +74,6 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            export DB_NAME=${{ secrets.DB_NAME }}
             export NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
             export JWT_SECRET=qa-secret-key-123
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
@@ -102,8 +101,8 @@ jobs:
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml up -d
             
             # Security Node (needs keys)
-            sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p keys"
-            sudo scp keys/*.pem ubuntu@$SECURITY_PRIVATE_IP:~/keys/
+            sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p deployment/compose/keys"
+            sudo scp keys/*.pem ubuntu@$SECURITY_PRIVATE_IP:~/deployment/compose/keys/
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
             
@@ -120,7 +119,7 @@ jobs:
               -e REDIS_HOST=$DATABASE_PRIVATE_IP \
               -e DB_USER=postgres \
               -e DB_PASSWORD=$DB_PASSWORD \
-              -e DB_NAME=identitydbqa \
+              -e DB_NAME=identitydb \
               -e API_GATEWAY=http://localhost:3000 \
               node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
@@ -191,7 +190,6 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            export DB_NAME=${{ secrets.DB_NAME }}
             export NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
             export JWT_SECRET=prod-secret-key-123
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
@@ -219,7 +217,7 @@ jobs:
               -e REDIS_HOST=$DATABASE_PRIVATE_IP \
               -e DB_USER=postgres \
               -e DB_PASSWORD=$DB_PASSWORD \
-              -e DB_NAME=$DB_NAME \
+              -e DB_NAME=identitydb \
               -e API_GATEWAY=http://localhost:3000 \
               node:20-alpine sh -c "apk add --no-cache git && git clone https://github.com/JessielCH/scholarship-system-platform.git /app && cd /app/scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
