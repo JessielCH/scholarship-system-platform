@@ -2,6 +2,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface AcademicStatus {
+  final_score: number;
+  scholarship_type: string;
+  gpa: number;
+  vulnerability_score: number;
+}
+
 export default function Dashboard() {
   const [role, setRole] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -29,7 +36,7 @@ export default function Dashboard() {
     }
   }, [router]);
 
-  const [academicStatus, setAcademicStatus] = useState<Record<string, unknown> | null>(null);
+  const [academicStatus, setAcademicStatus] = useState<AcademicStatus | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
 
   useEffect(() => {
