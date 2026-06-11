@@ -46,7 +46,7 @@ jobs:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "deployment/compose/"
+          source: "deployment/compose/,scripts/"
           target: "~/"
           
       - name: Deploy to Distributed EC2s
@@ -110,6 +110,19 @@ jobs:
             # Edge Node
             sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml pull
             sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml up -d
+            
+            # Auto-Seed Databases (Identity & Academic)
+            echo "Waiting for services to be ready before seeding..."
+            sleep 15
+            echo "Running Global Seeder inside Node container..."
+            sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts \
+              -e DB_HOST=$DATABASE_PRIVATE_IP \
+              -e REDIS_HOST=$DATABASE_PRIVATE_IP \
+              -e DB_USER=postgres \
+              -e DB_PASSWORD=$DB_PASSWORD \
+              -e DB_NAME=identitydbqa \
+              -e API_GATEWAY=http://localhost:3000 \
+              node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
   deploy-prod:
     name: Deploy to Production
@@ -149,7 +162,7 @@ jobs:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "deployment/compose/"
+          source: "deployment/compose/,scripts/"
           target: "~/"
           
       - name: Deploy to Distributed EC2s
@@ -213,6 +226,19 @@ jobs:
             # Edge Node
             sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml pull
             sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml up -d
+            
+            # Auto-Seed Databases (Identity & Academic)
+            echo "Waiting for services to be ready before seeding..."
+            sleep 15
+            echo "Running Global Seeder inside Node container..."
+            sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts \
+              -e DB_HOST=$DATABASE_PRIVATE_IP \
+              -e REDIS_HOST=$DATABASE_PRIVATE_IP \
+              -e DB_USER=postgres \
+              -e DB_PASSWORD=$DB_PASSWORD \
+              -e DB_NAME=$DB_NAME \
+              -e API_GATEWAY=http://localhost:3000 \
+              node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
   load-test:
     name: K6 Load Testing
