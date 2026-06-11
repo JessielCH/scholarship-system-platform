@@ -102,8 +102,8 @@ jobs:
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml up -d
             
             # Security Node (needs keys)
-            sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p keys"
-            sudo scp keys/*.pem ubuntu@$SECURITY_PRIVATE_IP:~/keys/
+            sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p deployment/compose/keys"
+            sudo scp keys/*.pem ubuntu@$SECURITY_PRIVATE_IP:~/deployment/compose/keys/
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
             
@@ -120,7 +120,7 @@ jobs:
               -e REDIS_HOST=$DATABASE_PRIVATE_IP \
               -e DB_USER=postgres \
               -e DB_PASSWORD=$DB_PASSWORD \
-              -e DB_NAME=identitydbqa \
+              -e DB_NAME=$DB_NAME \
               -e API_GATEWAY=http://localhost:3000 \
               node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
