@@ -2,12 +2,41 @@ import Fastify from 'fastify';
 import proxy from '@fastify/http-proxy';
 import fastifyRateLimit from '@fastify/rate-limit';
 import cors from '@fastify/cors';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const fastify = Fastify({ logger: true });
+
+// Setup Swagger
+fastify.register(fastifySwagger, {
+  swagger: {
+    info: {
+      title: 'UCE Scholarship System API Gateway',
+      description: 'API Gateway for all 10 Microservices',
+      version: '1.0.0'
+    },
+    securityDefinitions: {
+      bearerAuth: {
+        type: 'apiKey',
+        name: 'Authorization',
+        in: 'header'
+      }
+    }
+  }
+});
+
+fastify.register(fastifySwaggerUi, {
+  routePrefix: '/docs',
+  uiConfig: {
+    docExpansion: 'full',
+    deepLinking: false
+  }
+});
+
 
 // Load RSA public key
 let publicKey = process.env.JWT_PUBLIC_KEY ? process.env.JWT_PUBLIC_KEY.replace(/\\n/g, '\n') : '';
