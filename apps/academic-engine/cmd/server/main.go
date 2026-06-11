@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/adapters/broker"
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/adapters/config"
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/adapters/handlers"
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/adapters/repositories"
@@ -64,8 +65,13 @@ func main() {
 		log.Println("✓ Using in-memory repository (CQRS with memory storage)")
 	}
 
+	// Initialize Message Broker (RabbitMQ)
+	rabbitUrl := os.Getenv("RABBITMQ_URL")
+	broker := broker.NewRabbitMQBroker(rabbitUrl)
+	defer broker.Close()
+
 	// Initialize CQRS Services
-	cmdService := services.NewCommandService(cmdRepo, queryRepo)
+	cmdService := services.NewCommandService(cmdRepo, queryRepo, broker)
 	queryService := services.NewQueryService(queryRepo)
 
 	// Initialize Handlers
