@@ -46,7 +46,7 @@ jobs:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "deployment/compose/"
+          source: "deployment/compose/,scripts/"
           target: "~/"
           
       - name: Deploy to Distributed EC2s
@@ -110,6 +110,19 @@ jobs:
             # Edge Node
             sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml pull
             sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml up -d
+            
+            # Auto-Seed Databases (Identity & Academic)
+            echo "Waiting for services to be ready before seeding..."
+            sleep 15
+            echo "Running Global Seeder inside Node container..."
+            sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts \
+              -e DB_HOST=$DATABASE_PRIVATE_IP \
+              -e REDIS_HOST=$DATABASE_PRIVATE_IP \
+              -e DB_USER=postgres \
+              -e DB_PASSWORD=$DB_PASSWORD \
+              -e DB_NAME=identitydbqa \
+              -e API_GATEWAY=http://localhost:3000 \
+              node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
   deploy-prod:
     name: Deploy to Production
@@ -135,12 +148,15 @@ jobs:
         working-directory: infrastructure/terraform/environments/prod
         env:
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+          TF_VAR_ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+          TF_VAR_jwt_private_key: ${{ secrets.JWT_PRIVATE_KEY }}
+          TF_VAR_jwt_public_key: ${{ secrets.JWT_PUBLIC_KEY }}
         run: |
           AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           BUCKET_NAME="scholarship-tf-state-${AWS_ACCOUNT_ID}"
           terraform init -input=false -backend-config="bucket=${BUCKET_NAME}" -backend-config="key=prod/terraform.tfstate" -backend-config="region=us-east-1"
-          echo "CORE_PRIVATE_IP=$(terraform output -raw core_private_ip)" >> $GITHUB_ENV
-          echo "SECURITY_PRIVATE_IP=$(terraform output -raw security_private_ip)" >> $GITHUB_ENV
+          echo "ASG_NAME=$(terraform output -raw asg_name)" >> $GITHUB_ENV
+          echo "SECURITY_PRIVATE_IP=$(terraform output -raw bastion_public_ip)" >> $GITHUB_ENV
           echo "DATABASE_PRIVATE_IP=$(terraform output -raw database_private_ip)" >> $GITHUB_ENV
           
       - name: Copy docker-compose files
@@ -149,30 +165,28 @@ jobs:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "deployment/compose/"
+          source: "deployment/compose/,scripts/"
           target: "~/"
           
-      - name: Deploy to Distributed EC2s
+      - name: Deploy to Standalone EC2s (Database & Security)
         uses: appleboy/ssh-action@v1.0.3
         env:
           JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
           JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          CORE_PRIVATE_IP: ${{ env.CORE_PRIVATE_IP }}
           SECURITY_PRIVATE_IP: ${{ env.SECURITY_PRIVATE_IP }}
           DATABASE_PRIVATE_IP: ${{ env.DATABASE_PRIVATE_IP }}
         with:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP
           script: |
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
@@ -187,22 +201,9 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
-            
-            # Ensure Docker is installed on private nodes
-            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
-            done
-            
             # Database Node
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml up -d
-            
-            # Core Node
-            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml pull
-            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml up -d
             
             # Security Node
             sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p keys"
@@ -210,9 +211,51 @@ jobs:
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
             
-            # Edge Node
-            sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml pull
-            sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml up -d
+            # Auto-Seed Databases via Security Node (Bastion)
+            echo "Waiting for DB to be ready before seeding..."
+            sleep 15
+            sudo docker run --rm --network host \
+              -e DB_HOST=$DATABASE_PRIVATE_IP \
+              -e REDIS_HOST=$DATABASE_PRIVATE_IP \
+              -e DB_USER=postgres \
+              -e DB_PASSWORD=$DB_PASSWORD \
+              -e DB_NAME=$DB_NAME \
+              -e API_GATEWAY=http://localhost:3000 \
+              node:20-alpine sh -c "apk add --no-cache git && git clone https://github.com/JessielCH/scholarship-system-platform.git /app && cd /app/scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
+
+      - name: Zero-Downtime Rolling Update (ASG Instance Refresh)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          echo "Starting ASG Instance Refresh for $ASG_NAME"
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name ${{ env.ASG_NAME }} \
+            --strategy Rolling \
+            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
+            --query 'InstanceRefreshId' --output text)
+            
+          echo "Instance Refresh ID: $REFRESH_ID"
+          echo "Waiting for refresh to complete (Rolling Update)..."
+          
+          while true; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name ${{ env.ASG_NAME }} \
+              --instance-refresh-ids $REFRESH_ID \
+              --query 'InstanceRefreshes[0].Status' --output text)
+            
+            echo "Current Status: $STATUS"
+            if [ "$STATUS" == "Successful" ]; then
+              echo "Zero-Downtime Deployment Completed Successfully!"
+              break
+            elif [ "$STATUS" == "Failed" ] || [ "$STATUS" == "Cancelled" ]; then
+              echo "Instance Refresh Failed!"
+              exit 1
+            fi
+            sleep 30
+          done
 
   load-test:
     name: K6 Load Testing
