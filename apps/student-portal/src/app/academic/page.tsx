@@ -28,9 +28,13 @@ export default function AcademicEngineUI() {
   const checkStatus = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
       const res = await fetch(`/api/v1/queries/academic/status?record_id=${recordId}`, {
         method: "GET",
-        headers: { "X-User-Role": "STUDENT" },
+        headers: { 
+          "X-User-Role": "STUDENT",
+          ...(token && { "Authorization": `Bearer ${token}` })
+        },
       });
       if (res.ok) {
         setResult(await res.json());
@@ -50,9 +54,13 @@ export default function AcademicEngineUI() {
       if (facultyFilter) {
         url += `?faculty=${encodeURIComponent(facultyFilter)}`;
       }
+      const token = localStorage.getItem("token");
       const res = await fetch(url, {
         method: "GET",
-        headers: { "X-User-Role": "ADMIN" },
+        headers: { 
+          "X-User-Role": "ADMIN",
+          ...(token && { "Authorization": `Bearer ${token}` })
+        },
       });
       if (res.ok) {
         const data = await res.json();
