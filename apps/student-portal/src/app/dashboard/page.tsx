@@ -20,9 +20,9 @@ export default function Dashboard() {
       const decodedJson = atob(payloadBase64);
       const payload = JSON.parse(decodedJson);
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line
       setRole(payload.role || "STUDENT");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line
       setEmail(payload.email || "");
     } catch (e) {
       console.error("Invalid token", e);

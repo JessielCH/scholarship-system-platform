@@ -1,83 +1,55 @@
-version: '3.8'
+name: scholarship-system
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: scholarship_postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123!
-      POSTGRES_DB: identitydbqa
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
+  # Base de Datos en Memoria para Proyecciones CQRS
   redis:
     image: redis:7-alpine
-    container_name: scholarship_redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - scholarship-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
 
-  identity-service:
+  # Backend Go: Motor Académico
+  academic-engine:
     build:
-      context: ./apps/identity-service
+      context: ./apps/academic-engine
       dockerfile: Dockerfile
-    container_name: scholarship_identity
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - PORT=3001
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres123!
-      - DB_NAME=identitydbqa
-      - NODE_ENV=development
-      - JWT_SECRET=${JWT_SECRET:-super-secret-key-for-qa}
     ports:
-      - "3001:3001"
-
-  api-gateway:
-    build:
-      context: ./apps/api-gateway
-      dockerfile: Dockerfile
-    container_name: scholarship_gateway
+      - "8081:8081"
+    environment:
+      - USE_REDIS=true
+      - REDIS_URL=redis://redis:6379
+      - PORT=8081
     depends_on:
       redis:
         condition: service_healthy
-      identity-service:
-        condition: service_started
-    environment:
-      - PORT=3000
-      - REDIS_URL=redis://redis:6379
-      - IDENTITY_SERVICE_URL=http://identity-service:3001
-      - JWT_SECRET=${JWT_SECRET:-super-secret-key-for-qa}
-    ports:
-      - "3000:3000"
+    networks:
+      - scholarship-net
 
+  # Frontend Next.js: Portal de Estudiantes
   student-portal:
     build:
       context: ./apps/student-portal
       dockerfile: Dockerfile
-    container_name: scholarship_student_portal
-    depends_on:
-      - api-gateway
-    environment:
-      - NODE_ENV=production
     ports:
-      - "3002:3000"
+      - "3000:3000"
+    environment:
+      - API_URL=http://academic-engine:8081
+    networks:
+      - scholarship-net
+    depends_on:
+      - academic-engine
+
+networks:
+  scholarship-net:
+    driver: bridge
 
 volumes:
-  postgres_data:
+  redis_data:
