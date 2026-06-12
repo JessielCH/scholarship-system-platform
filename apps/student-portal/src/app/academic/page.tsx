@@ -23,6 +23,10 @@ export default function AcademicEngineUI() {
   const [facultyFilter, setFacultyFilter] = useState("");
   const [activeTab, setActiveTab] = useState<"ALL" | "EXCELLENCE" | "VULNERABILITY">("ALL");
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
   const loadDirectory = async () => {
     setDirLoading(true);
     try {
@@ -71,12 +75,31 @@ export default function AcademicEngineUI() {
     return true;
   });
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(1);
+  }, [searchId, facultyFilter, activeTab]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredDirectory.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedDirectory = filteredDirectory.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
-        <div className="flex justify-between items-center bg-slate-800/50 backdrop-blur-md p-6 rounded-2xl border border-slate-700/50 shadow-2xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-800/50 backdrop-blur-md p-6 rounded-2xl border border-slate-700/50 shadow-2xl gap-4">
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight text-white">
               Academic Engine <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Command Center</span>
@@ -163,7 +186,7 @@ export default function AcademicEngineUI() {
 
           {/* Tabs */}
           <div className="border-t border-slate-700 bg-slate-800/50">
-            <div className="flex px-4 overflow-x-auto">
+            <div className="flex px-4 overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setActiveTab("ALL")}
                 className={`py-4 px-6 font-bold text-sm border-b-2 whitespace-nowrap transition-colors ${activeTab === "ALL" ? "border-cyan-400 text-cyan-400" : "border-transparent text-slate-400 hover:text-slate-200"}`}
@@ -186,69 +209,124 @@ export default function AcademicEngineUI() {
           </div>
         </div>
 
-        {/* Data Table */}
-        <div className="bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-700/50">
-              <thead className="bg-slate-900/50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-300 uppercase tracking-widest">Student ID</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-300 uppercase tracking-widest">Faculty</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-300 uppercase tracking-widest">Score</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-300 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-slate-300 uppercase tracking-widest">Type</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50">
-                {filteredDirectory.length > 0 ? (
-                  filteredDirectory.slice(0, 100).map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-700/30 transition-colors group">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">
-                        {row.StudentID}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{row.Faculty}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">
-                        <span className="bg-slate-900 px-2 py-1 rounded text-cyan-300 border border-slate-700">
-                          {(row.Score || 0).toFixed(2)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${row.IsApproved ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                          {row.IsApproved ? "APPROVED" : "DENIED"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold">
-                        {row.Type === "EXCELLENCE" ? (
-                          <span className="text-purple-400">EXCELLENCE</span>
-                        ) : row.Type === "VULNERABILITY" ? (
-                          <span className="text-pink-400">VULNERABILITY</span>
-                        ) : (
-                          <span className="text-slate-500">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-16 text-center text-slate-400">
-                      <div className="flex flex-col items-center">
-                        <svg className="w-12 h-12 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="text-lg">No students found matching your filters.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          {filteredDirectory.length > 100 && (
-            <div className="bg-slate-900/80 px-6 py-3 border-t border-slate-700 text-center text-xs text-slate-500 font-mono">
-              Showing top 100 results to optimize DOM rendering.
-            </div>
+        {/* Results Info */}
+        <div className="flex justify-between items-center px-2">
+          <p className="text-slate-400 text-sm font-medium">
+            Found <span className="text-white font-bold">{filteredDirectory.length}</span> students matching filters
+          </p>
+          {totalPages > 1 && (
+            <p className="text-slate-500 text-sm">
+              Page {currentPage} of {totalPages}
+            </p>
           )}
         </div>
+
+        {/* Responsive Grid Cards */}
+        {paginatedDirectory.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {paginatedDirectory.map((row, idx) => (
+              <div 
+                key={idx} 
+                className="group relative bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 hover:bg-slate-800 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-900/20 hover:-translate-y-1 overflow-hidden"
+              >
+                {/* Decorative glow */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/0 to-blue-500/0 group-hover:from-cyan-500/20 group-hover:to-blue-500/20 blur opacity-0 group-hover:opacity-100 transition duration-500 rounded-2xl pointer-events-none"></div>
+                
+                <div className="relative flex flex-col h-full space-y-4">
+                  {/* Card Header: Student ID & Status */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Student ID</p>
+                      <h3 className="text-lg font-black text-white group-hover:text-cyan-400 transition-colors">{row.StudentID}</h3>
+                    </div>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${row.IsApproved ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                      {row.IsApproved ? "APPROVED" : "DENIED"}
+                    </span>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Faculty</p>
+                      <p className="text-sm text-slate-300 line-clamp-2">{row.Faculty}</p>
+                    </div>
+                  </div>
+
+                  {/* Card Footer: Type & Score */}
+                  <div className="pt-4 border-t border-slate-700/50 flex justify-between items-center">
+                    <div>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Type</p>
+                      {row.Type === "EXCELLENCE" ? (
+                        <span className="text-sm font-bold text-purple-400">EXCELLENCE</span>
+                      ) : row.Type === "VULNERABILITY" ? (
+                        <span className="text-sm font-bold text-pink-400">VULNERABILITY</span>
+                      ) : (
+                        <span className="text-sm font-bold text-slate-500">-</span>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Score</p>
+                      <span className="inline-block bg-slate-900 px-2 py-1 rounded text-cyan-300 border border-slate-700 font-mono text-sm font-bold">
+                        {(row.Score || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Empty State */
+          <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700 p-16 flex flex-col items-center justify-center text-center">
+            <div className="bg-slate-900/50 p-4 rounded-full mb-4">
+              <svg className="w-12 h-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">No students found</h3>
+            <p className="text-slate-400 max-w-md">
+              We couldn&apos;t find any scholarship applications matching your current filters. Try adjusting your search criteria or changing the faculty filter.
+            </p>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center py-8 space-x-4">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              className="flex items-center px-4 py-2 bg-slate-800 border border-slate-600 rounded-xl text-slate-300 font-medium hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Previous
+            </button>
+            
+            <div className="flex items-center space-x-2">
+              <span className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-cyan-400 font-bold font-mono shadow-inner">
+                {currentPage}
+              </span>
+              <span className="text-slate-500 font-medium">of</span>
+              <span className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-400 font-bold font-mono">
+                {totalPages}
+              </span>
+            </div>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="flex items-center px-4 py-2 bg-slate-800 border border-slate-600 rounded-xl text-slate-300 font-medium hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );
