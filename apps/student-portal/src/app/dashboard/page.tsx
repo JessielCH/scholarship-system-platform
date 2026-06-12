@@ -48,7 +48,7 @@ export default function Dashboard() {
         const payload = JSON.parse(atob(payloadBase64));
         const sub = payload.sub; // UUID
 
-        const res = await fetch(`http://54.82.165.189/api/v1/queries/academic/status?record_id=${sub}`, {
+        const res = await fetch(`/api/v1/queries/academic/status?record_id=${sub}`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`

@@ -12,9 +12,7 @@ services:
       - "8081:8081"
 
   socioeconomic-validator:
-    build:
-      context: ../../apps/socioeconomic-validator
-      dockerfile: Dockerfile
+    image: ghcr.io/jessielch/scholarship-system-platform/socioeconomic-validator:latest
     container_name: scholarship_socioeconomic_validator
     restart: unless-stopped
     environment:
