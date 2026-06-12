@@ -10,7 +10,7 @@ services:
       - DB_PORT=5432
       - DB_USERNAME=postgres
       - DB_PASSWORD=${DB_PASSWORD:-postgres123!}
-      - DB_NAME=${DB_NAME:-identitydb}
+      - DB_NAME=identitydb
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET}
       - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY}

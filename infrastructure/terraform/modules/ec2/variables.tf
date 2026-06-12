@@ -35,3 +35,15 @@ variable "allocate_eip" {
   type        = bool
   default     = false
 }
+
+variable "enable_ebs_volume" {
+  type        = bool
+  description = "Whether to attach a persistent EBS volume"
+  default     = false
+}
+
+variable "ebs_volume_size" {
+  type        = number
+  description = "Size of the persistent EBS volume in GB"
+  default     = 20
+}

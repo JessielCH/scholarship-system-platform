@@ -22,6 +22,7 @@ export class AuthService implements OnModuleInit {
     if (!(await this.userRepository.findOne({ where: { email: studentEmail } }))) {
       const salt = await bcrypt.genSalt(10);
       await this.userRepository.save(this.userRepository.create({
+        id: 'student_default_0',
         email: studentEmail,
         passwordHash: await bcrypt.hash('student123', salt),
         role: 'STUDENT',
@@ -33,6 +34,7 @@ export class AuthService implements OnModuleInit {
     if (!(await this.userRepository.findOne({ where: { email: adminEmail } }))) {
       const salt = await bcrypt.genSalt(10);
       await this.userRepository.save(this.userRepository.create({
+        id: 'admin_default_0',
         email: adminEmail,
         passwordHash: await bcrypt.hash('admin123', salt),
         role: 'ADMIN',
