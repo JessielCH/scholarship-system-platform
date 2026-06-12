@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 
 interface StatusResult {
   error?: string;
+  RecordID?: string;
   StudentID?: string;
   Faculty?: string;
   IsApproved?: boolean;
@@ -62,8 +63,12 @@ export default function AcademicEngineUI() {
   // Derived filtered directory
   const filteredDirectory = directory.filter((item) => {
     // 1. Search filter
-    if (searchId && !item.StudentID?.toLowerCase().includes(searchId.toLowerCase())) {
-      return false;
+    if (searchId) {
+      const matchStudent = item.StudentID?.toLowerCase().includes(searchId.toLowerCase());
+      const matchRecord = item.RecordID?.toLowerCase().includes(searchId.toLowerCase());
+      if (!matchStudent && !matchRecord) {
+        return false;
+      }
     }
     // 2. Tab filter
     if (activeTab === "EXCELLENCE" && item.Type !== "EXCELLENCE") {
@@ -237,7 +242,7 @@ export default function AcademicEngineUI() {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Student ID</p>
-                      <h3 className="text-lg font-black text-white group-hover:text-cyan-400 transition-colors">{row.StudentID}</h3>
+                      <h3 className="text-lg font-black text-white group-hover:text-cyan-400 transition-colors">{row.StudentID || row.RecordID}</h3>
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${row.IsApproved ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                       {row.IsApproved ? "APPROVED" : "DENIED"}
