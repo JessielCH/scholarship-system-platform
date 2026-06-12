@@ -6,6 +6,7 @@ import (
 
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/domain"
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/ports"
+	"github.com/sirupsen/logrus"
 )
 
 type HttpHandler struct {
@@ -59,18 +60,22 @@ func (h *HttpHandler) handleSeed(w http.ResponseWriter, r *http.Request) {
 
 func (h *HttpHandler) handleProcess(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
+		logrus.Warn("Method not allowed on /api/v1/commands/academic/process")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
+	logrus.Info("Starting to process academic records...")
 	err := h.cmdService.ProcessAll()
 	if err != nil {
-		http.Error(w, "Error processing rankings", http.StatusInternalServerError)
+		logrus.Errorf("Error calculating rankings: %v", err)
+		http.Error(w, "Error calculating rankings", http.StatusInternalServerError)
 		return
 	}
 
+	logrus.Info("Rankings processed successfully.")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "All rankings processed successfully"}`))
+	w.Write([]byte(`{"message": "Rankings processed successfully"}`))
 }
 
 func (h *HttpHandler) handleStatus(w http.ResponseWriter, r *http.Request) {
