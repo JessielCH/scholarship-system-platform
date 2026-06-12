@@ -66,8 +66,8 @@ fastify.register(cors, {
 fastify.decorateRequest('user', null);
 
 fastify.addHook('preHandler', async (request, reply) => {
-  // Public routes mapping (e.g. Identity Service login/register)
-  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth')) {
+  // Public routes mapping (e.g. Identity Service login/register, and health checks)
+  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth') || request.url.startsWith('/health')) {
     return;
   }
 
@@ -109,6 +109,11 @@ for (const s of services) {
     rewritePrefix: s.rewritePrefix || s.prefix
   });
 }
+
+// Health check endpoint for AWS ALB
+fastify.get('/health', async (request, reply) => {
+  return { status: 'OK', timestamp: new Date().toISOString() };
+});
 
 const start = async () => {
   try {

@@ -28,9 +28,9 @@ variable "security_group_ids" {
   description = "List of security group IDs for the instances"
 }
 
-variable "target_group_arn" {
-  type        = string
-  description = "ARN of the ALB Target Group to attach the ASG to"
+variable "target_group_arns" {
+  type        = list(string)
+  description = "ARNs of the ALB Target Groups to attach the ASG to"
 }
 
 variable "min_size" {

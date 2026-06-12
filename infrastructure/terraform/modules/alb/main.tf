@@ -29,6 +29,22 @@ resource "aws_lb_target_group" "edge" {
   }
 }
 
+resource "aws_lb_target_group" "frontend" {
+  name     = "${var.environment}-frontend-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    path                = "/"
+    healthy_threshold   = 2
+    unhealthy_threshold = 10
+    timeout             = 3
+    interval            = 30
+    matcher             = "200-399"
+  }
+}
+
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn
   port              = "80"
@@ -36,6 +52,22 @@ resource "aws_lb_listener" "http" {
 
   default_action {
     type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
+}
+
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
     target_group_arn = aws_lb_target_group.edge.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/*", "/auth/*", "/academic/*", "/socioeconomic/*", "/documents/*", "/audit/*", "/saga/*", "/financial/*"]
+    }
   }
 }

@@ -8,7 +8,7 @@ output "alb_arn" {
   value       = aws_lb.this.arn
 }
 
-output "target_group_arn" {
-  description = "The ARN of the target group"
-  value       = aws_lb_target_group.edge.arn
+output "target_group_arns" {
+  description = "The ARNs of the target groups"
+  value       = [aws_lb_target_group.edge.arn, aws_lb_target_group.frontend.arn]
 }
