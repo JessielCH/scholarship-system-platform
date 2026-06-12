@@ -50,7 +50,9 @@ export default function AcademicEngineUI() {
 
   // Auto-load on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDirectory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facultyFilter]);
 
   // Derived filtered directory
