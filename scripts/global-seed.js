@@ -111,13 +111,13 @@ async function seed() {
         const semester = Math.floor(Math.random() * 8) + 3;
 
         const record = {
-          id: id,
-          student_id: id,
-          faculty: fac,
-          career: fac + ' General',
-          semester: semester,
-          gpa: gpa,
-          vulnerability_score: vuln
+          ID: id,
+          StudentID: id,
+          Faculty: fac,
+          Career: fac + ' General',
+          Semester: semester,
+          GPA: gpa,
+          VulnerabilityScore: vuln
         };
 
         const key = `record:${id}`;
