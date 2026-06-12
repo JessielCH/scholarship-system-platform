@@ -85,10 +85,10 @@ module "asg_core" {
     module.security_groups.compute_sg_id
   ]
   target_group_arns = module.alb.target_group_arns
-  user_data        = local.docker_install_script
-  min_size         = 2
-  max_size         = 4
-  desired_capacity = 2
+  user_data         = local.docker_install_script
+  min_size          = 2
+  max_size          = 4
+  desired_capacity  = 2
 }
 
 module "ec2_database" {
