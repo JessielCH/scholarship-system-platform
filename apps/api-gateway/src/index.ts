@@ -95,7 +95,7 @@ const services = [
   { prefix: '/api/v1/commands/academic', envVar: 'ACADEMIC_SERVICE_URL', default: 'http://localhost:3002', rewritePrefix: '/api/v1/commands/academic' },
   { prefix: '/auth', envVar: 'IDENTITY_SERVICE_URL', default: 'http://localhost:3001', rewritePrefix: '/auth' },
   { prefix: '/academic', envVar: 'ACADEMIC_SERVICE_URL', default: 'http://localhost:3002', rewritePrefix: '/academic' },
-  { prefix: '/socioeconomic', envVar: 'SOCIOECONOMIC_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/socioeconomic' },
+  { prefix: '/socioeconomic', envVar: 'SOCIOECONOMIC_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/api/socioeconomic' },
   { prefix: '/documents', envVar: 'DOCUMENT_SERVICE_URL', default: 'http://localhost:3004', rewritePrefix: '/documents' },
   { prefix: '/audit', envVar: 'AUDIT_SERVICE_URL', default: 'http://localhost:3005', rewritePrefix: '/audit' },
   { prefix: '/saga', envVar: 'SAGA_SERVICE_URL', default: 'http://localhost:3006', rewritePrefix: '/saga' },
