@@ -16,6 +16,7 @@ import { User } from './users/user.entity';
       database: process.env.DB_NAME || 'identitydbqa',
       entities: [User],
       synchronize: true, // Always true for university/demo environments without migrations
+      dropSchema: true, // Drop schema to avoid migration conflicts with ID type changes
     }),
     TypeOrmModule.forFeature([User]),
     AuthModule,
