@@ -15,7 +15,7 @@ const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const API_GATEWAY = process.env.API_GATEWAY || 'http://localhost:3000';
 
 const BATCH_SIZE = 1000;
-const TOTAL_RECORDS = 10000;
+const TOTAL_RECORDS = 50000;
 
 const uceFaculties = [
 	"Ingenieria y Ciencias Aplicadas",
