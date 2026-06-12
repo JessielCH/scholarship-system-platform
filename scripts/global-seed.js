@@ -85,6 +85,7 @@ async function seed() {
     const sharedHash = await bcrypt.hash('student123', salt);
 
     console.log('Clearing old synthetic students from Postgres...');
+    await pgClient.query('ALTER TABLE "user" ALTER COLUMN id TYPE varchar(255);');
     await pgClient.query("DELETE FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
     
     console.log('Clearing old cache from Redis...');
