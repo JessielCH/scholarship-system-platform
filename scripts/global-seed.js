@@ -86,6 +86,9 @@ async function seed() {
 
     console.log('Clearing old synthetic students from Postgres...');
     await pgClient.query("DELETE FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
+    
+    console.log('Clearing old cache from Redis...');
+    await redisClient.flushdb();
 
     console.log(`Inserting ${TOTAL_RECORDS} students in batches of ${BATCH_SIZE}...`);
     
