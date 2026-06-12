@@ -98,7 +98,7 @@ async function seed() {
       for (let j = 0; j < BATCH_SIZE; j++) {
         const idx = i + j;
         lastIdx = idx;
-        const id = uuidv4();
+        const id = `student_${idx}`;
         const email = `student_${idx}@uce.edu.ec`;
 
         // Postgres User value string
