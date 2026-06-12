@@ -77,6 +77,7 @@ export default function AcademicEngineUI() {
 
   // Reset pagination when filters change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [searchId, facultyFilter, activeTab]);
 
@@ -284,7 +285,7 @@ export default function AcademicEngineUI() {
             </div>
             <h3 className="text-xl font-bold text-white mb-2">No students found</h3>
             <p className="text-slate-400 max-w-md">
-              We couldn't find any scholarship applications matching your current filters. Try adjusting your search criteria or changing the faculty filter.
+              We couldn&apos;t find any scholarship applications matching your current filters. Try adjusting your search criteria or changing the faculty filter.
             </p>
           </div>
         )}
