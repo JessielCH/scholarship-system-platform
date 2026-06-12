@@ -40,7 +40,7 @@ export default function LoginPage() {
         } else {
           router.push("/dashboard");
         }
-      } catch (e) {
+      } catch {
         router.push("/dashboard");
       }
     } catch (err: unknown) {

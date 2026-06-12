@@ -27,12 +27,14 @@ var uceFaculties = []string{
 type commandService struct {
 	cmdRepo   ports.CommandRepository
 	queryRepo ports.QueryRepository
+	broker    ports.MessageBroker
 }
 
-func NewCommandService(cmdRepo ports.CommandRepository, queryRepo ports.QueryRepository) ports.CommandService {
+func NewCommandService(cmdRepo ports.CommandRepository, queryRepo ports.QueryRepository, broker ports.MessageBroker) ports.CommandService {
 	return &commandService{
 		cmdRepo:   cmdRepo,
 		queryRepo: queryRepo,
+		broker:    broker,
 	}
 }
 
@@ -74,6 +76,9 @@ func (s *commandService) ProcessAll() error {
 	}
 
 	_, err = s.CalculateRankings(records)
+	if err == nil && s.broker != nil {
+		_ = s.broker.PublishEvent("scholarship.rankings.calculated", []byte(`{"status":"success", "count": `+fmt.Sprint(len(records))+`}`))
+	}
 	return err
 }
 

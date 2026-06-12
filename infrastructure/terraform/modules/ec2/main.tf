@@ -29,12 +29,24 @@ resource "aws_instance" "this" {
     Name        = "${var.environment}-${var.service_name}"
     Environment = var.environment
   }
+
+  dynamic "ebs_block_device" {
+    for_each = var.enable_ebs_volume ? [1] : []
+    content {
+      device_name           = "/dev/sdf"
+      volume_size           = var.ebs_volume_size
+      volume_type           = "gp3"
+      delete_on_termination = false
+      encrypted             = true
+    }
+  }
 }
 
 resource "aws_eip" "this" {
   count    = var.allocate_eip ? 1 : 0
   instance = aws_instance.this.id
   domain   = "vpc"
+
 
   tags = {
     Name        = "${var.environment}-${var.service_name}-eip"
