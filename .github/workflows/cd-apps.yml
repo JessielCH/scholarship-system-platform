@@ -1,6 +1,8 @@
 name: CD Microservices (Docker & Testing)
 
 on:
+  push:
+    branches: ["s4"]
   workflow_dispatch:
   workflow_run:
     workflows: ["CD Terraform (Infrastructure)"]
@@ -12,7 +14,7 @@ jobs:
     name: Deploy to QA
     runs-on: ubuntu-latest
     environment: qa
-    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/QA') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/QA' || github.ref == 'refs/heads/s4')) || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') || (github.event_name == 'push' && github.ref == 'refs/heads/s4') }}
     steps:
       - uses: actions/checkout@v4
       
