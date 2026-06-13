@@ -79,6 +79,16 @@ async function seed() {
     await pgClient.connect();
     console.log(`Connected to PostgreSQL (${DB_NAME})`);
 
+    try {
+      const countRes = await pgClient.query('SELECT COUNT(*) FROM "user"');
+      if (parseInt(countRes.rows[0].count) >= TOTAL_RECORDS) {
+          console.log(`Already found ${countRes.rows[0].count} records. Skipping seed.`);
+          return;
+      }
+    } catch (e) {
+      console.log('User table might not exist yet, continuing with seed...');
+    }
+
     // Generate one hash to reuse for all synthetic students to save massive CPU time
     console.log('Generating shared bcrypt hash for "student123"...');
     const salt = await bcrypt.genSalt(10);
