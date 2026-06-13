@@ -25,4 +25,10 @@ public class ValidationController {
         ValidationResult result = validationService.validateSocioeconomicData(savedRecord);
         return ResponseEntity.ok(result);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleExceptions(Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(500).body("Exception: " + e.getMessage() + " | Cause: " + e.getCause());
+    }
 }

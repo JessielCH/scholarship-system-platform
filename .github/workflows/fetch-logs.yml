@@ -1,0 +1,22 @@
+name: Fetch Logs
+on: [push]
+
+jobs:
+  fetch-logs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Core Node Logs
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        with:
+          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: SSH_KEY
+          script: |
+            sudo mkdir -p /root/.ssh
+            echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
+            sudo chmod 600 /root/.ssh/id_rsa
+            sudo ssh -o StrictHostKeyChecking=no -i /root/.ssh/id_rsa ubuntu@10.2.11.228 "sudo docker logs scholarship_socioeconomic_validator --tail 200"
