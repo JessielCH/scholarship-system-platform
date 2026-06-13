@@ -16,10 +16,10 @@ services:
     container_name: scholarship_socioeconomic_validator
     restart: unless-stopped
     environment:
-      - DB_HOST=postgres
+      - DB_HOST=${DATABASE_PRIVATE_IP}
       - DB_PORT=5432
       - DB_NAME=socioeconomic_db
       - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-postgres123!}
     ports:
       - "8082:8082"
