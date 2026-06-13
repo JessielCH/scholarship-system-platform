@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, OnModuleInit, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  OnModuleInit,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -17,28 +22,36 @@ export class AuthService implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('Checking default users...');
-    
+
     const studentEmail = 'student@uce.edu.ec';
-    if (!(await this.userRepository.findOne({ where: { email: studentEmail } }))) {
+    if (
+      !(await this.userRepository.findOne({ where: { email: studentEmail } }))
+    ) {
       const salt = await bcrypt.genSalt(10);
-      await this.userRepository.save(this.userRepository.create({
-        id: 'student_default_0',
-        email: studentEmail,
-        passwordHash: await bcrypt.hash('student123', salt),
-        role: 'STUDENT',
-      }));
+      await this.userRepository.save(
+        this.userRepository.create({
+          id: 'student_default_0',
+          email: studentEmail,
+          passwordHash: await bcrypt.hash('student123', salt),
+          role: 'STUDENT',
+        }),
+      );
       this.logger.log(`Seeded ${studentEmail}`);
     }
 
     const adminEmail = 'admin@uce.edu.ec';
-    if (!(await this.userRepository.findOne({ where: { email: adminEmail } }))) {
+    if (
+      !(await this.userRepository.findOne({ where: { email: adminEmail } }))
+    ) {
       const salt = await bcrypt.genSalt(10);
-      await this.userRepository.save(this.userRepository.create({
-        id: 'admin_default_0',
-        email: adminEmail,
-        passwordHash: await bcrypt.hash('admin123', salt),
-        role: 'ADMIN',
-      }));
+      await this.userRepository.save(
+        this.userRepository.create({
+          id: 'admin_default_0',
+          email: adminEmail,
+          passwordHash: await bcrypt.hash('admin123', salt),
+          role: 'ADMIN',
+        }),
+      );
       this.logger.log(`Seeded ${adminEmail}`);
     }
   }
