@@ -66,6 +66,15 @@ async function seed() {
     } else {
       console.log(`Database "${DB_NAME}" already exists.`);
     }
+
+    const res2 = await initClient.query(`SELECT 1 FROM pg_database WHERE datname = 'socioeconomic_db'`);
+    if (res2.rowCount === 0) {
+      console.log(`Database "socioeconomic_db" does not exist. Creating it automatically...`);
+      await initClient.query(`CREATE DATABASE "socioeconomic_db"`);
+      console.log(`Database "socioeconomic_db" created successfully.`);
+    } else {
+      console.log(`Database "socioeconomic_db" already exists.`);
+    }
     await initClient.end();
 
     pgClient = new Client({
@@ -78,6 +87,16 @@ async function seed() {
 
     await pgClient.connect();
     console.log(`Connected to PostgreSQL (${DB_NAME})`);
+
+    try {
+      const countRes = await pgClient.query('SELECT COUNT(*) FROM "user"');
+      if (parseInt(countRes.rows[0].count) >= TOTAL_RECORDS) {
+          console.log(`Already found ${countRes.rows[0].count} records. Skipping seed.`);
+          return;
+      }
+    } catch (e) {
+      console.log('User table might not exist yet, continuing with seed...');
+    }
 
     // Generate one hash to reuse for all synthetic students to save massive CPU time
     console.log('Generating shared bcrypt hash for "student123"...');
