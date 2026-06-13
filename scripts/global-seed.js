@@ -66,6 +66,15 @@ async function seed() {
     } else {
       console.log(`Database "${DB_NAME}" already exists.`);
     }
+
+    const res2 = await initClient.query(`SELECT 1 FROM pg_database WHERE datname = 'socioeconomic_db'`);
+    if (res2.rowCount === 0) {
+      console.log(`Database "socioeconomic_db" does not exist. Creating it automatically...`);
+      await initClient.query(`CREATE DATABASE "socioeconomic_db"`);
+      console.log(`Database "socioeconomic_db" created successfully.`);
+    } else {
+      console.log(`Database "socioeconomic_db" already exists.`);
+    }
     await initClient.end();
 
     pgClient = new Client({
