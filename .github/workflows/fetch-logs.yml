@@ -4,6 +4,7 @@ on: [push]
 jobs:
   fetch-logs:
     runs-on: ubuntu-latest
+    environment: qa
     steps:
       - uses: actions/checkout@v4
       - name: Fetch Core Node Logs
