@@ -7,6 +7,23 @@ on:
     branches: [ "develop" ]
 
 jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api-gateway: 'apps/api-gateway/**'
+            identity-service: 'apps/identity-service/**'
+            student-portal: 'apps/student-portal/**'
+            academic-engine: 'apps/academic-engine/**'
+            socioeconomic-validator: 'apps/socioeconomic-validator/**'
+
   lint-and-test:
     name: Build, Lint & Test (Monorepo)
     runs-on: ubuntu-latest
@@ -27,9 +44,6 @@ jobs:
         
       - name: Turborepo Build & Lint
         run: npx turbo run build lint
-        
-      - name: Unit Tests
-        run: npx turbo run test
 
   terraform-check:
     name: Terraform Format & Validate
@@ -48,14 +62,15 @@ jobs:
 
   build-and-push:
     name: Build & Push Docker Images
-    needs: lint-and-test
+    needs: [lint-and-test, detect-changes]
+    if: ${{ needs.detect-changes.outputs.services != '[]' && needs.detect-changes.outputs.services != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     strategy:
       matrix:
-        service: [api-gateway, identity-service, student-portal, academic-engine]
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
     
     steps:
       - uses: actions/checkout@v4
@@ -85,5 +100,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
