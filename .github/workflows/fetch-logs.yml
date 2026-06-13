@@ -1,5 +1,9 @@
 name: Fetch Logs
-on: [push]
+on:
+  push:
+    branches:
+      - s4
+  workflow_dispatch:
 
 jobs:
   fetch-logs:
