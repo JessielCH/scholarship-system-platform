@@ -72,6 +72,7 @@ module "asg_edge" {
   max_size            = 3
   desired_capacity    = 2
   associate_public_ip = false
+  key_name            = "vockey"
 }
 
 module "ec2_core" {

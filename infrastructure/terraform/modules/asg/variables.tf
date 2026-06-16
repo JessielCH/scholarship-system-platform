@@ -56,3 +56,9 @@ variable "associate_public_ip" {
   description = "Whether to associate a public IP address"
   default     = false
 }
+
+variable "key_name" {
+  type        = string
+  description = "The key name to use for the instance"
+  default     = null
+}
