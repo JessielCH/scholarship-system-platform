@@ -253,8 +253,9 @@ jobs:
             # Auto-Seed Databases (Identity & Academic)
             echo "Waiting for services to be ready before seeding..."
             sleep 15
-            echo "Running Global Seeder inside Node container..."
-            sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts               -e DB_HOST=$DATABASE_PRIVATE_IP               -e REDIS_HOST=$DATABASE_PRIVATE_IP               -e DB_USER=postgres               -e DB_PASSWORD=$DB_PASSWORD               -e DB_NAME=identitydb               -e API_GATEWAY=http://$ALB_DNS_NAME               node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
+            echo "Running Global Seeder inside Node container on Core node..."
+            sudo scp -o StrictHostKeyChecking=no -r ~/scripts ubuntu@$CORE_PRIVATE_IP:~/scripts
+            sudo ssh -o StrictHostKeyChecking=no ubuntu@$CORE_PRIVATE_IP "sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts -e DB_HOST=$DATABASE_PRIVATE_IP -e REDIS_HOST=$DATABASE_PRIVATE_IP -e DB_USER=postgres -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=identitydb -e API_GATEWAY=http://$ALB_DNS_NAME:3000 node:20-alpine sh -c \"cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js\""
 
   deploy-prod:
     name: Deploy to Production
@@ -385,15 +386,9 @@ jobs:
             # Auto-Seed Databases (Identity & Academic)
             echo "Waiting for services to be ready before seeding..."
             sleep 15
-            echo "Running Global Seeder inside Node container..."
-            sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts \
-              -e DB_HOST=$DATABASE_PRIVATE_IP \
-              -e REDIS_HOST=$DATABASE_PRIVATE_IP \
-              -e DB_USER=postgres \
-              -e DB_PASSWORD=$DB_PASSWORD \
-              -e DB_NAME=identitydb \
-              -e API_GATEWAY=http://$ALB_DNS_NAME \
-              node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
+            echo "Running Global Seeder inside Node container on Core node..."
+            sudo scp -o StrictHostKeyChecking=no -r ~/scripts ubuntu@$CORE_PRIVATE_IP:~/scripts
+            sudo ssh -o StrictHostKeyChecking=no ubuntu@$CORE_PRIVATE_IP "sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts -e DB_HOST=$DATABASE_PRIVATE_IP -e REDIS_HOST=$DATABASE_PRIVATE_IP -e DB_USER=postgres -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=identitydb -e API_GATEWAY=http://$ALB_DNS_NAME:3000 node:20-alpine sh -c \"cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js\""
 
   load-test:
     name: K6 Load Testing
