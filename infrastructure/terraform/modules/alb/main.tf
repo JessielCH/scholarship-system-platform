@@ -13,6 +13,22 @@ resource "aws_lb" "this" {
   }
 }
 
+resource "aws_lb_target_group" "edge" {
+  name     = "${var.environment}-edge-tg"
+  port     = 3000
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    path                = "/health"
+    healthy_threshold   = 2
+    unhealthy_threshold = 10
+    timeout             = 3
+    interval            = 30
+    matcher             = "200-399"
+  }
+}
+
 resource "aws_lb_target_group" "api" {
   name     = "${var.environment}-api-tg"
   port     = 3000
