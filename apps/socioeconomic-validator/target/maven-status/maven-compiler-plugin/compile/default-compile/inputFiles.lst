@@ -1,0 +1,15 @@
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/domain/HouseholdMember.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/repository/SocioeconomicRecordRepository.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/config/SoapConfig.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/soap/ObjectFactory.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/domain/ValidationResult.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/config/DroolsConfig.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/soap/GetSocioeconomicDataRequest.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/soap/GetSocioeconomicDataResponse.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/repository/ValidationResultRepository.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/service/ValidationService.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/controller/ValidationController.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/domain/SocioeconomicRecord.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/soap/package-info.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/SocioeconomicApplication.java
+/usr/src/mymaven/src/main/java/ec/edu/uce/socioeconomic/soap/SiiseSoapClient.java

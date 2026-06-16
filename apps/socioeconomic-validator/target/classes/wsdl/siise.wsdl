@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:tns="http://siise.gob.ec/ws"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             name="SiiseService"
+             targetNamespace="http://siise.gob.ec/ws">
+    <types>
+        <xsd:schema targetNamespace="http://siise.gob.ec/ws">
+            <xsd:element name="GetSocioeconomicDataRequest">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="nationalId" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="GetSocioeconomicDataResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="povertyIndex" type="xsd:decimal"/>
+                        <xsd:element name="isVulnerable" type="xsd:boolean"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:schema>
+    </types>
+
+    <message name="GetSocioeconomicDataRequest">
+        <part name="parameters" element="tns:GetSocioeconomicDataRequest"/>
+    </message>
+    <message name="GetSocioeconomicDataResponse">
+        <part name="parameters" element="tns:GetSocioeconomicDataResponse"/>
+    </message>
+
+    <portType name="SiisePortType">
+        <operation name="GetSocioeconomicData">
+            <input message="tns:GetSocioeconomicDataRequest"/>
+            <output message="tns:GetSocioeconomicDataResponse"/>
+        </operation>
+    </portType>
+
+    <binding name="SiiseBinding" type="tns:SiisePortType">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <operation name="GetSocioeconomicData">
+            <soap:operation soapAction="http://siise.gob.ec/ws/GetSocioeconomicData"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+    </binding>
+
+    <service name="SiiseService">
+        <port name="SiisePort" binding="tns:SiiseBinding">
+            <soap:address location="http://mock-siise-server.local/ws"/>
+        </port>
+    </service>
+</definitions>
