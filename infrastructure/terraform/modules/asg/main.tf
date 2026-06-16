@@ -2,6 +2,7 @@ resource "aws_launch_template" "this" {
   name_prefix   = "${var.environment}-asg-lt"
   image_id      = var.ami_id
   instance_type = var.instance_type
+  key_name      = var.key_name
   user_data     = base64encode(var.user_data)
 
   network_interfaces {
