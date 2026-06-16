@@ -5,7 +5,7 @@ on:
   workflow_run:
     workflows: ["CD Terraform (Infrastructure)"]
     types: [completed]
-    branches: ["QA", "main"]
+    branches: ["QA", "main", "staging"]
 
 jobs:
   deploy-qa:
@@ -123,6 +123,137 @@ jobs:
               -e API_GATEWAY=http://localhost:3000 \
               node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/staging') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'staging') }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        
+      - name: Get Terraform Outputs (STAGING)
+        id: tf-outputs
+        working-directory: infrastructure/terraform/environments/staging
+        env:
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET_NAME="scholarship-tf-state-${AWS_ACCOUNT_ID}"
+          terraform init -input=false -backend-config="bucket=${BUCKET_NAME}" -backend-config="key=staging/terraform.tfstate" -backend-config="region=us-east-1"
+          echo "CORE_PRIVATE_IP=$(terraform output -raw core_private_ip)" >> $GITHUB_ENV
+          echo "SECURITY_PRIVATE_IP=$(terraform output -raw security_private_ip)" >> $GITHUB_ENV
+          echo "DATABASE_PRIVATE_IP=$(terraform output -raw database_private_ip)" >> $GITHUB_ENV
+          echo "BASTION_PUBLIC_IP=$(terraform output -raw bastion_public_ip)" >> $GITHUB_ENV
+          echo "ASG_NAME=$(terraform output -raw asg_name)" >> $GITHUB_ENV
+          echo "ALB_DNS_NAME=$(terraform output -raw alb_dns_name)" >> $GITHUB_ENV
+
+      - name: Get ASG Instance IPs
+        id: asg-ips
+        run: |
+          INSTANCE_IDS=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${{ env.ASG_NAME }} --query "AutoScalingGroups[0].Instances[*].InstanceId" --output text)
+          if [ -z "$INSTANCE_IDS" ]; then
+            echo "No instances found in ASG"
+            EDGE_IPS=""
+          else
+            EDGE_IPS=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS --query "Reservations[*].Instances[*].PrivateIpAddress" --output text)
+          fi
+          echo "EDGE_PRIVATE_IPS=$EDGE_IPS" >> $GITHUB_ENV
+          
+      - name: Copy docker-compose files to Bastion
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.BASTION_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "deployment/compose/,scripts/"
+          target: "~/"
+          
+      - name: Deploy via Bastion Host
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          CORE_PRIVATE_IP: ${{ env.CORE_PRIVATE_IP }}
+          SECURITY_PRIVATE_IP: ${{ env.SECURITY_PRIVATE_IP }}
+          DATABASE_PRIVATE_IP: ${{ env.DATABASE_PRIVATE_IP }}
+          EDGE_PRIVATE_IPS: ${{ env.EDGE_PRIVATE_IPS }}
+          ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
+        with:
+          host: ${{ env.BASTION_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME
+          script: |
+            sudo mkdir -p /root/.ssh
+            echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
+            sudo chmod 600 /root/.ssh/id_rsa
+            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            for IP in $EDGE_PRIVATE_IPS; do
+              sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts
+            done
+            
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            export NEXT_PUBLIC_API_URL=http://$ALB_DNS_NAME
+            export JWT_SECRET=staging-secret-key-123
+            export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
+            export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
+            
+            mkdir -p keys
+            echo "$JWT_PRIVATE_KEY" > keys/private.pem
+            echo "$JWT_PUBLIC_KEY" > keys/public.pem
+            
+            sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+            
+            # Ensure Docker is installed on private nodes
+            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+            done
+            
+            # Database Node
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml up -d
+            
+            # Core Node
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml up -d
+            
+            # Security Node (needs keys)
+            sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p deployment/compose/keys"
+            sudo scp keys/*.pem ubuntu@$SECURITY_PRIVATE_IP:~/deployment/compose/keys/
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
+            
+            # Edge Nodes (ASG)
+            for IP in $EDGE_PRIVATE_IPS; do
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$IP -f deployment/compose/edge.yml pull
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$IP -f deployment/compose/edge.yml up -d
+            done
+            
+            # Auto-Seed Databases (Identity & Academic)
+            echo "Waiting for services to be ready before seeding..."
+            sleep 15
+            echo "Running Global Seeder inside Node container..."
+            sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts               -e DB_HOST=$DATABASE_PRIVATE_IP               -e REDIS_HOST=$DATABASE_PRIVATE_IP               -e DB_USER=postgres               -e DB_PASSWORD=$DB_PASSWORD               -e DB_NAME=identitydb               -e API_GATEWAY=http://$ALB_DNS_NAME               node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
+
   deploy-prod:
     name: Deploy to Production
     runs-on: ubuntu-latest
@@ -154,17 +285,32 @@ jobs:
           echo "CORE_PRIVATE_IP=$(terraform output -raw core_private_ip)" >> $GITHUB_ENV
           echo "SECURITY_PRIVATE_IP=$(terraform output -raw security_private_ip)" >> $GITHUB_ENV
           echo "DATABASE_PRIVATE_IP=$(terraform output -raw database_private_ip)" >> $GITHUB_ENV
+          echo "BASTION_PUBLIC_IP=$(terraform output -raw bastion_public_ip)" >> $GITHUB_ENV
+          echo "ASG_NAME=$(terraform output -raw asg_name)" >> $GITHUB_ENV
+          echo "ALB_DNS_NAME=$(terraform output -raw alb_dns_name)" >> $GITHUB_ENV
+
+      - name: Get ASG Instance IPs
+        id: asg-ips
+        run: |
+          INSTANCE_IDS=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${{ env.ASG_NAME }} --query "AutoScalingGroups[0].Instances[*].InstanceId" --output text)
+          if [ -z "$INSTANCE_IDS" ]; then
+            echo "No instances found in ASG"
+            EDGE_IPS=""
+          else
+            EDGE_IPS=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS --query "Reservations[*].Instances[*].PrivateIpAddress" --output text)
+          fi
+          echo "EDGE_PRIVATE_IPS=$EDGE_IPS" >> $GITHUB_ENV
           
-      - name: Copy docker-compose files
+      - name: Copy docker-compose files to Bastion
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          host: ${{ env.BASTION_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "deployment/compose/,scripts/"
           target: "~/"
           
-      - name: Deploy to Distributed EC2s
+      - name: Deploy via Bastion Host
         uses: appleboy/ssh-action@v1.0.3
         env:
           JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
@@ -173,11 +319,13 @@ jobs:
           CORE_PRIVATE_IP: ${{ env.CORE_PRIVATE_IP }}
           SECURITY_PRIVATE_IP: ${{ env.SECURITY_PRIVATE_IP }}
           DATABASE_PRIVATE_IP: ${{ env.DATABASE_PRIVATE_IP }}
+          EDGE_PRIVATE_IPS: ${{ env.EDGE_PRIVATE_IPS }}
+          ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
         with:
-          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          host: ${{ env.BASTION_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME
           script: |
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
@@ -185,11 +333,14 @@ jobs:
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
             sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            for IP in $EDGE_PRIVATE_IPS; do
+              sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts
+            done
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            export NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
+            export NEXT_PUBLIC_API_URL=http://$ALB_DNS_NAME
             export JWT_SECRET=prod-secret-key-123
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
@@ -203,7 +354,7 @@ jobs:
             sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             
             # Ensure Docker is installed on private nodes
-            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
+            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
               sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
@@ -221,9 +372,11 @@ jobs:
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
             
-            # Edge Node
-            sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml pull
-            sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml up -d
+            # Edge Nodes (ASG)
+            for IP in $EDGE_PRIVATE_IPS; do
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$IP -f deployment/compose/edge.yml pull
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$IP -f deployment/compose/edge.yml up -d
+            done
             
             # Auto-Seed Databases (Identity & Academic)
             echo "Waiting for services to be ready before seeding..."
@@ -235,7 +388,7 @@ jobs:
               -e DB_USER=postgres \
               -e DB_PASSWORD=$DB_PASSWORD \
               -e DB_NAME=identitydb \
-              -e API_GATEWAY=http://localhost:3000 \
+              -e API_GATEWAY=http://$ALB_DNS_NAME \
               node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
   load-test:

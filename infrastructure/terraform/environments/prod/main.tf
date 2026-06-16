@@ -14,6 +14,21 @@ module "security_groups" {
   vpc_id      = module.vpc.vpc_id
 }
 
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 locals {
   docker_install_script = <<-EOF
     #!/bin/bash
@@ -25,15 +40,38 @@ locals {
   EOF
 }
 
-module "ec2_edge" {
+module "ec2_bastion" {
   source             = "../../modules/ec2"
   environment        = "prod"
-  service_name       = "edge"
+  service_name       = "bastion"
   subnet_id          = module.vpc.public_subnet_ids[0]
-  security_group_ids = [module.security_groups.edge_sg_id]
+  security_group_ids = [module.security_groups.bastion_sg_id]
   instance_type      = "t2.micro"
-  user_data          = local.docker_install_script
+  user_data          = ""
   allocate_eip       = true
+}
+
+module "alb" {
+  source          = "../../modules/alb"
+  environment     = "prod"
+  vpc_id          = module.vpc.vpc_id
+  subnets         = module.vpc.public_subnet_ids
+  security_groups = [module.security_groups.alb_sg_id]
+}
+
+module "asg_edge" {
+  source              = "../../modules/asg"
+  environment         = "prod"
+  ami_id              = data.aws_ami.ubuntu.id
+  instance_type       = "t2.micro"
+  user_data           = local.docker_install_script
+  subnet_ids          = module.vpc.private_subnet_ids
+  security_group_ids  = [module.security_groups.edge_sg_id]
+  target_group_arn    = module.alb.target_group_arn
+  min_size            = 1
+  max_size            = 3
+  desired_capacity    = 2
+  associate_public_ip = false
 }
 
 module "ec2_core" {

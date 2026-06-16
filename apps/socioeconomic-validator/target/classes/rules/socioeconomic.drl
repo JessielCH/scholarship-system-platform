@@ -1,0 +1,58 @@
+package rules;
+
+import ec.edu.uce.socioeconomic.domain.SocioeconomicRecord;
+import ec.edu.uce.socioeconomic.domain.ValidationResult;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+rule "Calculate Per Capita Income"
+    salience 100
+    no-loop true
+    when
+        $record : SocioeconomicRecord()
+        $result : ValidationResult()
+    then
+        BigDecimal totalIncome = BigDecimal.ZERO;
+        for (ec.edu.uce.socioeconomic.domain.HouseholdMember member : $record.getHouseholdMembers()) {
+            if (member.getMonthlyIncome() != null) {
+                totalIncome = totalIncome.add(member.getMonthlyIncome());
+            }
+        }
+        
+        $result.setTotalHouseholdIncome(totalIncome);
+        int membersCount = $record.getHouseholdMembers().size();
+        
+        if (membersCount > 0) {
+            BigDecimal perCapita = totalIncome.divide(new BigDecimal(membersCount), 2, RoundingMode.HALF_UP);
+            $result.setPerCapitaIncome(perCapita);
+        } else {
+            $result.setPerCapitaIncome(BigDecimal.ZERO);
+        }
+        update($result);
+end
+
+rule "High Income Rejection"
+    salience 90
+    when
+        $result : ValidationResult(perCapitaIncome.compareTo(new BigDecimal("1200")) > 0)
+    then
+        $result.setIsValid(false);
+        $result.setRejectionReason("Ingreso per cápita supera el límite de 1200 USD.");
+        $result.setPovertyIndexScore(new BigDecimal("0"));
+end
+
+rule "Poverty Index Scoring - Low Income"
+    salience 80
+    when
+        $result : ValidationResult(perCapitaIncome.compareTo(new BigDecimal("400")) <= 0, isValid == true)
+    then
+        $result.setPovertyIndexScore(new BigDecimal("100"));
+end
+
+rule "Poverty Index Scoring - Medium Income"
+    salience 80
+    when
+        $result : ValidationResult(perCapitaIncome.compareTo(new BigDecimal("400")) > 0, perCapitaIncome.compareTo(new BigDecimal("1200")) <= 0, isValid == true)
+    then
+        $result.setPovertyIndexScore(new BigDecimal("50"));
+end

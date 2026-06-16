@@ -1,0 +1,15 @@
+ec/edu/uce/socioeconomic/repository/ValidationResultRepository.class
+ec/edu/uce/socioeconomic/config/SoapConfig.class
+ec/edu/uce/socioeconomic/controller/ValidationController.class
+ec/edu/uce/socioeconomic/domain/HouseholdMember.class
+ec/edu/uce/socioeconomic/config/DroolsConfig.class
+ec/edu/uce/socioeconomic/soap/ObjectFactory.class
+ec/edu/uce/socioeconomic/repository/SocioeconomicRecordRepository.class
+ec/edu/uce/socioeconomic/SocioeconomicApplication.class
+ec/edu/uce/socioeconomic/service/ValidationService.class
+ec/edu/uce/socioeconomic/soap/GetSocioeconomicDataResponse.class
+ec/edu/uce/socioeconomic/soap/SiiseSoapClient.class
+ec/edu/uce/socioeconomic/soap/GetSocioeconomicDataRequest.class
+ec/edu/uce/socioeconomic/soap/package-info.class
+ec/edu/uce/socioeconomic/domain/SocioeconomicRecord.class
+ec/edu/uce/socioeconomic/domain/ValidationResult.class
