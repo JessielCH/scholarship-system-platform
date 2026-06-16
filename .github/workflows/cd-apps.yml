@@ -163,11 +163,11 @@ jobs:
         id: asg-ips
         run: |
           INSTANCE_IDS=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${{ env.ASG_NAME }} --query "AutoScalingGroups[0].Instances[*].InstanceId" --output text)
-          if [ -z "$INSTANCE_IDS" ]; then
+          if [ -z "$INSTANCE_IDS" ] || [ "$INSTANCE_IDS" = "None" ]; then
             echo "No instances found in ASG"
             EDGE_IPS=""
           else
-            EDGE_IPS=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS --query "Reservations[*].Instances[*].PrivateIpAddress" --output text)
+            EDGE_IPS=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS --query "Reservations[*].Instances[*].PrivateIpAddress" --output text | tr '\n' ' ' | tr '\t' ' ')
           fi
           echo "EDGE_PRIVATE_IPS=$EDGE_IPS" >> $GITHUB_ENV
           
@@ -293,11 +293,11 @@ jobs:
         id: asg-ips
         run: |
           INSTANCE_IDS=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${{ env.ASG_NAME }} --query "AutoScalingGroups[0].Instances[*].InstanceId" --output text)
-          if [ -z "$INSTANCE_IDS" ]; then
+          if [ -z "$INSTANCE_IDS" ] || [ "$INSTANCE_IDS" = "None" ]; then
             echo "No instances found in ASG"
             EDGE_IPS=""
           else
-            EDGE_IPS=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS --query "Reservations[*].Instances[*].PrivateIpAddress" --output text)
+            EDGE_IPS=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS --query "Reservations[*].Instances[*].PrivateIpAddress" --output text | tr '\n' ' ' | tr '\t' ' ')
           fi
           echo "EDGE_PRIVATE_IPS=$EDGE_IPS" >> $GITHUB_ENV
           
