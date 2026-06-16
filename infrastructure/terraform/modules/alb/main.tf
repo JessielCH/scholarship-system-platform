@@ -13,14 +13,30 @@ resource "aws_lb" "this" {
   }
 }
 
-resource "aws_lb_target_group" "edge" {
-  name     = "${var.environment}-edge-tg"
+resource "aws_lb_target_group" "api" {
+  name     = "${var.environment}-api-tg"
   port     = 3000
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
   health_check {
     path                = "/health"
+    healthy_threshold   = 2
+    unhealthy_threshold = 10
+    timeout             = 3
+    interval            = 30
+    matcher             = "200-399"
+  }
+}
+
+resource "aws_lb_target_group" "frontend" {
+  name     = "${var.environment}-front-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    path                = "/"
     healthy_threshold   = 2
     unhealthy_threshold = 10
     timeout             = 3
@@ -36,6 +52,17 @@ resource "aws_lb_listener" "http" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.edge.arn
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
+}
+
+resource "aws_lb_listener" "api" {
+  load_balancer_arn = aws_lb.this.arn
+  port              = "3000"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.api.arn
   }
 }

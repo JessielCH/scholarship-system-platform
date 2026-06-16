@@ -22,7 +22,7 @@ resource "aws_launch_template" "this" {
 resource "aws_autoscaling_group" "this" {
   name                = "${var.environment}-asg"
   vpc_zone_identifier = var.subnet_ids
-  target_group_arns   = [var.target_group_arn]
+  target_group_arns   = var.target_group_arns
 
   min_size         = var.min_size
   max_size         = var.max_size
