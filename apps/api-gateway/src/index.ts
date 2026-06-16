@@ -65,6 +65,10 @@ fastify.register(cors, {
 
 fastify.decorateRequest('user', null);
 
+fastify.get('/health', async () => {
+  return { status: 'ok' };
+});
+
 fastify.addHook('preHandler', async (request, reply) => {
   // Public routes mapping (e.g. Identity Service login/register)
   if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth')) {

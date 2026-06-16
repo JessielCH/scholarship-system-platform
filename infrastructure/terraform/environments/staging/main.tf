@@ -67,7 +67,7 @@ module "asg_edge" {
   user_data           = local.docker_install_script
   subnet_ids          = module.vpc.private_subnet_ids
   security_group_ids  = [module.security_groups.edge_sg_id]
-  target_group_arn    = module.alb.target_group_arn
+  target_group_arns   = [module.alb.api_target_group_arn, module.alb.frontend_target_group_arn]
   min_size            = 1
   max_size            = 3
   desired_capacity    = 2
