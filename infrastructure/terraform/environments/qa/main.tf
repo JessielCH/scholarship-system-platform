@@ -98,3 +98,19 @@ resource "aws_s3_bucket_lifecycle_configuration" "database_backups_lifecycle" {
     }
   }
 }
+
+data "aws_caller_identity" "current" {}
+
+resource "aws_s3_bucket" "documents" {
+  bucket        = "uce-distribuida-qa-documents-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
+
+  tags = {
+    Environment = "qa"
+    Purpose     = "Encrypted Documents Storage"
+  }
+}
+
+output "documents_bucket_name" {
+  value = aws_s3_bucket.documents.id
+}
