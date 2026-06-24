@@ -22,24 +22,6 @@ export default function DocumentUploadDropzone() {
   const [existingDocs, setExistingDocs] = useState<DocumentMetadata[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const payloadBase64 = token.split(".")[1];
-        const payload = JSON.parse(atob(payloadBase64));
-        const sub = payload.sub; // UUID of student
-        setStudentId(sub);
-        fetchDocuments(sub);
-      } catch (e) {
-        console.error("Invalid token", e);
-        setLoadingDocs(false);
-      }
-    } else {
-      setLoadingDocs(false);
-    }
-  }, []);
-
   const fetchDocuments = async (sub: string) => {
     try {
       const res = await fetch(`http://localhost:8084/api/documents/student/${sub}`);
@@ -53,6 +35,26 @@ export default function DocumentUploadDropzone() {
       setLoadingDocs(false);
     }
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const payloadBase64 = token.split(".")[1];
+        const payload = JSON.parse(atob(payloadBase64));
+        const sub = payload.sub; // UUID of student
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setStudentId(sub);
+        fetchDocuments(sub);
+      } catch (e) {
+        console.error("Invalid token", e);
+        setLoadingDocs(false);
+      }
+    } else {
+      setLoadingDocs(false);
+    }
+   
+  }, []);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -112,7 +114,7 @@ export default function DocumentUploadDropzone() {
       } else {
         setMessage("❌ Upload failed. Please try again.");
       }
-    } catch (error) {
+    } catch {
       setMessage("❌ Network error.");
     } finally {
       setUploading(false);

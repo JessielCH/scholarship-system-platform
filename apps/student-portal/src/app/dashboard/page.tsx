@@ -35,6 +35,38 @@ export default function Dashboard() {
   const [selectedDocId, setSelectedDocId] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
+  const fetchStatus = async (sub: string) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`/api/v1/queries/academic/status?record_id=${sub}`, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAcademicStatus(data);
+      } else {
+        setAcademicStatus(null);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
+  const fetchAllDocuments = async () => {
+    try {
+      const res = await fetch("http://localhost:8084/api/documents/all");
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments(data);
+      }
+    } catch (err) {
+      console.error("Error fetching docs", err);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -47,7 +79,9 @@ export default function Dashboard() {
       const decodedJson = atob(payloadBase64);
       const payload = JSON.parse(decodedJson);
 
+       
       setRole(payload.role || "STUDENT");
+       
       setEmail(payload.email || "");
 
       if (payload.role === "ADMIN") {
@@ -59,6 +93,7 @@ export default function Dashboard() {
       console.error("Invalid token", e);
       router.push("/");
     }
+   
   }, [router]);
 
   const fetchStatus = async (sub: string) => {
