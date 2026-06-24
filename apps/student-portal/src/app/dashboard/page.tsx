@@ -4,10 +4,9 @@ import { useRouter } from "next/navigation";
 import DocumentUploadDropzone from "@/components/DocumentUploadDropzone";
 
 interface AcademicStatus {
-  final_score: number;
-  scholarship_type: string;
-  gpa: number;
-  vulnerability_score: number;
+  Score: number;
+  Type: string;
+  IsApproved: boolean;
 }
 
 interface DocumentMetadata {
@@ -214,21 +213,21 @@ export default function Dashboard() {
             ) : academicStatus ? (
               <div className="grid grid-cols-2 gap-4 text-left bg-black/40 p-6 rounded-lg border border-white/10">
                 <p className="text-gray-400">Puntaje Final:</p>
-                <p className="font-mono text-green-400 font-bold">{(academicStatus.final_score || 0).toFixed(2)}</p>
+                <p className="font-mono text-green-400 font-bold">{(academicStatus.Score || 0).toFixed(2)}</p>
                 <p className="text-gray-400">Estado de Beca:</p>
-                <p className="font-bold text-blue-400">{academicStatus.scholarship_type || 'PROCESANDO'}</p>
-                <p className="text-gray-400">Promedio (GPA):</p>
-                <p className="font-mono">{academicStatus.gpa}</p>
-                <p className="text-gray-400">Vulnerabilidad:</p>
-                <p className="font-mono">{academicStatus.vulnerability_score}</p>
+                <p className={`font-bold ${academicStatus.IsApproved ? 'text-blue-400' : 'text-red-400'}`}>
+                  {academicStatus.IsApproved ? (academicStatus.Type || 'BECA APROBADA') : 'RECHAZADA'}
+                </p>
               </div>
             ) : (
               <p className="text-yellow-400">Tu expediente aún no ha sido procesado o no existe.</p>
             )}
             
-            <div className="mt-8 border-t border-white/10 pt-8">
-              <DocumentUploadDropzone />
-            </div>
+            {academicStatus?.IsApproved && (
+              <div className="mt-8 border-t border-white/10 pt-8">
+                <DocumentUploadDropzone />
+              </div>
+            )}
           </div>
         )}
       </div>
