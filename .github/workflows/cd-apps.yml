@@ -101,8 +101,10 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            command -v docker-compose >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker-compose)
-            sudo ln -sf $(which docker-compose) /usr/local/bin/docker-compose || true
+            curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose
+            sudo mv /tmp/docker-compose /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
               sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
@@ -255,8 +257,10 @@ jobs:
             
             command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io)
             
-            command -v docker-compose >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker-compose)
-            sudo ln -sf $(which docker-compose) /usr/local/bin/docker-compose || true
+            curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose
+            sudo mv /tmp/docker-compose /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
@@ -405,8 +409,10 @@ jobs:
             
             command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io)
             
-            command -v docker-compose >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker-compose)
-            sudo ln -sf $(which docker-compose) /usr/local/bin/docker-compose || true
+            curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose
+            sudo mv /tmp/docker-compose /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
