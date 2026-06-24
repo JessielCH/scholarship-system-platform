@@ -78,6 +78,8 @@ jobs:
             mkdir -p ~/.ssh
             echo "$SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
+            echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
+            chmod 600 ~/.ssh/config
             ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $CORE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
@@ -86,6 +88,8 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
+            sudo sh -c 'echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
+            sudo chmod 600 /root/.ssh/config
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
@@ -116,7 +120,12 @@ jobs:
             sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              echo "Checking connection to $IP..."
+              if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
+                echo "WARNING: Node $IP is unreachable. Skipping."
+                continue
+              fi
+              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
@@ -238,6 +247,8 @@ jobs:
             mkdir -p ~/.ssh
             echo "$SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
+            echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
+            chmod 600 ~/.ssh/config
             ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $CORE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
@@ -249,6 +260,8 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
+            sudo sh -c 'echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
+            sudo chmod 600 /root/.ssh/config
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
@@ -285,7 +298,12 @@ jobs:
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              echo "Checking connection to $IP..."
+              if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
+                echo "WARNING: Node $IP is unreachable. Skipping."
+                continue
+              fi
+              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
@@ -304,6 +322,11 @@ jobs:
             
             # Edge Nodes (ASG)
             for IP in $EDGE_PRIVATE_IPS; do
+              echo "Checking connection to Edge $IP..."
+              if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
+                echo "WARNING: Edge Node $IP is unreachable. Skipping."
+                continue
+              fi
               sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$IP -f deployment/compose/edge.yml pull
               sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$IP -f deployment/compose/edge.yml up -d
             done
@@ -402,6 +425,8 @@ jobs:
             mkdir -p ~/.ssh
             echo "$SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
+            echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
+            chmod 600 ~/.ssh/config
             ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $CORE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
@@ -413,6 +438,8 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
+            sudo sh -c 'echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
+            sudo chmod 600 /root/.ssh/config
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
@@ -449,7 +476,12 @@ jobs:
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              echo "Checking connection to $IP..."
+              if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
+                echo "WARNING: Node $IP is unreachable. Skipping."
+                continue
+              fi
+              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
@@ -468,6 +500,11 @@ jobs:
             
             # Edge Nodes (ASG)
             for IP in $EDGE_PRIVATE_IPS; do
+              echo "Checking connection to Edge $IP..."
+              if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
+                echo "WARNING: Edge Node $IP is unreachable. Skipping."
+                continue
+              fi
               sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$IP -f deployment/compose/edge.yml pull
               sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$IP -f deployment/compose/edge.yml up -d
             done
