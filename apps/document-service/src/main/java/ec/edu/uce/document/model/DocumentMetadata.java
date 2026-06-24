@@ -17,5 +17,9 @@ public class DocumentMetadata {
     private String contentType;
     private long sizeBytes;
     private LocalDateTime uploadedAt;
+    private String idNumber;
+    private String accountNumber;
+    private String status; // WAITING, VALIDATED, REJECTED
+    private String rejectionReason;
     private String encryptionAlgorithm;
 }
