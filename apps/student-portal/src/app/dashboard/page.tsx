@@ -96,37 +96,6 @@ export default function Dashboard() {
    
   }, [router]);
 
-  const fetchStatus = async (sub: string) => {
-    const token = localStorage.getItem("token");
-    try {
-      const res = await fetch(`/api/v1/queries/academic/status?record_id=${sub}`, {
-        method: "GET",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAcademicStatus(data);
-      } else {
-        setAcademicStatus(null);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingStatus(false);
-    }
-  };
-
-  const fetchAllDocuments = async () => {
-    try {
-      const res = await fetch("http://localhost:8084/api/documents/all");
-      if (res.ok) {
-        const data = await res.json();
-        setDocuments(data);
-      }
-    } catch (err) {
-      console.error("Error fetching docs", err);
-    }
-  };
 
   const handleReview = async (docId: string, status: string, reason?: string) => {
     try {
