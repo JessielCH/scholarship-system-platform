@@ -127,29 +127,6 @@ resource "aws_s3_bucket" "documents" {
   }
 }
 
-resource "aws_s3_bucket" "database_backups" {
-  bucket        = "uce-distribuida-staging-database-backups"
-  force_destroy = true
-
-  tags = {
-    Environment = "staging"
-    Purpose     = "Database Backups"
-  }
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "database_backups_lifecycle" {
-  bucket = aws_s3_bucket.database_backups.id
-
-  rule {
-    id     = "retention-15-days"
-    status = "Enabled"
-
-    expiration {
-      days = 15
-    }
-  }
-}
-
 output "documents_bucket_name" {
   value = aws_s3_bucket.documents.id
 }
