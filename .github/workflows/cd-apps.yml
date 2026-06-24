@@ -97,15 +97,15 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io)
+            command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker.io)
             if [ ! -f /usr/local/bin/docker-compose ]; then
-              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
@@ -250,15 +250,15 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io)
+            command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker.io)
             if [ ! -f /usr/local/bin/docker-compose ]; then
-              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
@@ -399,18 +399,15 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io)
+            command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker.io)
             if [ ! -f /usr/local/bin/docker-compose ]; then
-              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
             
-            # Use local docker-compose installation logic instead of curl
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose
-            
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
