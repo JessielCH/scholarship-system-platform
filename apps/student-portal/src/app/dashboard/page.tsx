@@ -79,9 +79,10 @@ export default function Dashboard() {
       const decodedJson = atob(payloadBase64);
       const payload = JSON.parse(decodedJson);
 
-       
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRole(payload.role || "STUDENT");
-       
+      
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEmail(payload.email || "");
 
       if (payload.role === "ADMIN") {
