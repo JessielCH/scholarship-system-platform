@@ -64,11 +64,12 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          ACCOUNT_ID: ${{ env.ACCOUNT_ID }}
         with:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,ACCOUNT_ID
           script: |
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
@@ -85,9 +86,6 @@ jobs:
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             export MONGO_URI="$MONGO_URI"
-            
-            # Use dynamic AWS Account ID to find the bucket name
-            ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep accountId | awk -F\" '{print $4}')
             export S3_BUCKET_NAME="uce-distribuida-qa-documents-$ACCOUNT_ID"
             
             export AES_SECRET_KEY="$AES_SECRET_KEY"
@@ -99,9 +97,8 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+            command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose)
+            sudo ln -sf /usr/bin/docker-compose /usr/local/bin/docker-compose || true
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
@@ -174,6 +171,7 @@ jobs:
           echo "BASTION_PUBLIC_IP=$(terraform output -raw bastion_public_ip)" >> $GITHUB_ENV
           echo "ASG_NAME=$(terraform output -raw asg_name)" >> $GITHUB_ENV
           echo "ALB_DNS_NAME=$(terraform output -raw alb_dns_name)" >> $GITHUB_ENV
+          echo "ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
 
       - name: Get ASG Instance IPs
         id: asg-ips
@@ -199,6 +197,7 @@ jobs:
       - name: Deploy via Bastion Host
         uses: appleboy/ssh-action@v1.0.3
         env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
           JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
@@ -208,16 +207,16 @@ jobs:
           EDGE_PRIVATE_IPS: ${{ env.EDGE_PRIVATE_IPS }}
           ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
           MONGO_URI: ${{ secrets.MONGO_URI }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           AES_SECRET_KEY: ${{ secrets.AES_SECRET_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          ACCOUNT_ID: ${{ env.ACCOUNT_ID }}
         with:
           host: ${{ env.BASTION_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,ACCOUNT_ID
           script: |
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
@@ -237,11 +236,8 @@ jobs:
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             export MONGO_URI="$MONGO_URI"
-            
-            # Use dynamic AWS Account ID to find the bucket name
-            ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep accountId | awk -F\" '{print $4}')
             export S3_BUCKET_NAME="uce-distribuida-staging-documents-$ACCOUNT_ID"
-
+            
             export AES_SECRET_KEY="$AES_SECRET_KEY"
             export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
             export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
@@ -251,11 +247,8 @@ jobs:
             echo "$JWT_PRIVATE_KEY" > keys/private.pem
             echo "$JWT_PUBLIC_KEY" > keys/public.pem
             
-            command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io)
-            
-            sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+            command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose)
+            sudo ln -sf /usr/bin/docker-compose /usr/local/bin/docker-compose || true
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
@@ -323,6 +316,7 @@ jobs:
           echo "BASTION_PUBLIC_IP=$(terraform output -raw bastion_public_ip)" >> $GITHUB_ENV
           echo "ASG_NAME=$(terraform output -raw asg_name)" >> $GITHUB_ENV
           echo "ALB_DNS_NAME=$(terraform output -raw alb_dns_name)" >> $GITHUB_ENV
+          echo "ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
 
       - name: Get ASG Instance IPs
         id: asg-ips
@@ -348,6 +342,7 @@ jobs:
       - name: Deploy via Bastion Host
         uses: appleboy/ssh-action@v1.0.3
         env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
           JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
@@ -362,11 +357,12 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          ACCOUNT_ID: ${{ env.ACCOUNT_ID }}
         with:
           host: ${{ env.BASTION_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,ACCOUNT_ID
           script: |
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
@@ -387,8 +383,6 @@ jobs:
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             export MONGO_URI="$MONGO_URI"
             
-            # Use dynamic AWS Account ID to find the bucket name
-            ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep accountId | awk -F\" '{print $4}')
             export S3_BUCKET_NAME="uce-distribuida-prod-documents-$ACCOUNT_ID"
             export AES_SECRET_KEY="$AES_SECRET_KEY"
             export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
@@ -401,9 +395,9 @@ jobs:
             
             command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io)
             
-            sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+            # Use local docker-compose installation logic instead of curl
+            sudo apt-get install -y docker-compose
+            sudo ln -sf /usr/bin/docker-compose /usr/local/bin/docker-compose || true
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
