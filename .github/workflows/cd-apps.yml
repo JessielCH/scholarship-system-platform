@@ -78,7 +78,7 @@ jobs:
             mkdir -p ~/.ssh
             echo "$SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
-            echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
+            printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
             chmod 600 ~/.ssh/config
             ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
@@ -88,7 +88,7 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo sh -c 'echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
+            sudo sh -c 'printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
             sudo chmod 600 /root/.ssh/config
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
@@ -247,7 +247,7 @@ jobs:
             mkdir -p ~/.ssh
             echo "$SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
-            echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
+            printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
             chmod 600 ~/.ssh/config
             ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
@@ -260,7 +260,7 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo sh -c 'echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
+            sudo sh -c 'printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
             sudo chmod 600 /root/.ssh/config
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
@@ -425,7 +425,7 @@ jobs:
             mkdir -p ~/.ssh
             echo "$SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
-            echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
+            printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
             chmod 600 ~/.ssh/config
             ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
@@ -438,7 +438,7 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo sh -c 'echo -e "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
+            sudo sh -c 'printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
             sudo chmod 600 /root/.ssh/config
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
