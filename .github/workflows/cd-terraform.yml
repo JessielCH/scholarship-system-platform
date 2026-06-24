@@ -3,7 +3,7 @@ name: CD Terraform (Infrastructure)
 on:
   workflow_dispatch:
   push:
-    branches: ["QA", "staging", "main"]
+    branches: ["staging", "main"]
     paths:
       - "infrastructure/terraform/**"
 
