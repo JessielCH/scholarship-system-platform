@@ -14,6 +14,21 @@ module "security_groups" {
   vpc_id      = module.vpc.vpc_id
 }
 
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 locals {
   docker_install_script = <<-EOF
     #!/bin/bash
@@ -25,15 +40,39 @@ locals {
   EOF
 }
 
-module "ec2_edge" {
+module "ec2_bastion" {
   source             = "../../modules/ec2"
   environment        = "prod"
-  service_name       = "edge"
+  service_name       = "bastion"
   subnet_id          = module.vpc.public_subnet_ids[0]
-  security_group_ids = [module.security_groups.edge_sg_id]
+  security_group_ids = [module.security_groups.bastion_sg_id]
   instance_type      = "t2.micro"
-  user_data          = local.docker_install_script
+  user_data          = ""
   allocate_eip       = true
+}
+
+module "alb" {
+  source          = "../../modules/alb"
+  environment     = "prod"
+  vpc_id          = module.vpc.vpc_id
+  subnets         = module.vpc.public_subnet_ids
+  security_groups = [module.security_groups.alb_sg_id]
+}
+
+module "asg_edge" {
+  source              = "../../modules/asg"
+  environment         = "prod"
+  ami_id              = data.aws_ami.ubuntu.id
+  instance_type       = "t3.small"
+  user_data           = local.docker_install_script
+  subnet_ids          = module.vpc.private_subnet_ids
+  security_group_ids  = [module.security_groups.edge_sg_id]
+  target_group_arns   = [module.alb.api_target_group_arn, module.alb.frontend_target_group_arn]
+  min_size            = 1
+  max_size            = 3
+  desired_capacity    = 2
+  associate_public_ip = false
+  key_name            = "vockey"
 }
 
 module "ec2_core" {
@@ -42,7 +81,7 @@ module "ec2_core" {
   service_name       = "core"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.core_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.small"
   user_data          = local.docker_install_script
 }
 
@@ -52,7 +91,7 @@ module "ec2_security" {
   service_name       = "security"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.security_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.small"
   user_data          = local.docker_install_script
 }
 
@@ -62,7 +101,7 @@ module "ec2_compute" {
   service_name       = "compute"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.compute_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.small"
   user_data          = local.docker_install_script
 }
 
@@ -72,6 +111,6 @@ module "ec2_database" {
   service_name       = "database"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.database_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.small"
   user_data          = local.docker_install_script
 }

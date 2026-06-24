@@ -2,6 +2,7 @@ resource "aws_launch_template" "this" {
   name_prefix   = "${var.environment}-asg-lt"
   image_id      = var.ami_id
   instance_type = var.instance_type
+  key_name      = var.key_name
   user_data     = base64encode(var.user_data)
 
   network_interfaces {
@@ -21,7 +22,7 @@ resource "aws_launch_template" "this" {
 resource "aws_autoscaling_group" "this" {
   name                = "${var.environment}-asg"
   vpc_zone_identifier = var.subnet_ids
-  target_group_arns   = [var.target_group_arn]
+  target_group_arns   = var.target_group_arns
 
   min_size         = var.min_size
   max_size         = var.max_size

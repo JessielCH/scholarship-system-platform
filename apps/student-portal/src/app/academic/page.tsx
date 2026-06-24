@@ -113,12 +113,20 @@ export default function AcademicEngineUI() {
               Goroutines-powered Sub-millisecond Ranking Cache
             </p>
           </div>
-          <button 
-            onClick={() => { localStorage.removeItem("token"); router.push("/"); }}
-            className="px-6 py-2 bg-slate-700 hover:bg-red-500 hover:text-white text-slate-300 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg"
-          >
-            Sign Out
-          </button>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => router.push("/dashboard")}
+              className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg border border-purple-400/30"
+            >
+              Document Reviews 📄
+            </button>
+            <button 
+              onClick={() => { localStorage.removeItem("token"); router.push("/"); }}
+              className="px-6 py-2 bg-slate-700 hover:bg-red-500 hover:text-white text-slate-300 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Toolbar: Search, Filters & Tabs */}

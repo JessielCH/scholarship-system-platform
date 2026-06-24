@@ -65,6 +65,10 @@ fastify.register(cors, {
 
 fastify.decorateRequest('user', null);
 
+fastify.get('/health', async () => {
+  return { status: 'ok' };
+});
+
 fastify.addHook('preHandler', async (request, reply) => {
   // Public routes mapping (e.g. Identity Service login/register)
   if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth')) {
@@ -81,6 +85,8 @@ fastify.addHook('preHandler', async (request, reply) => {
   try {
     const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
     (request as any).user = decoded;
+    request.headers['x-user-role'] = (decoded as any).role || '';
+    request.headers['x-user-id'] = (decoded as any).sub || '';
   } catch (err) {
     fastify.log.error(err);
     reply.status(401).send({ error: 'Unauthorized: Invalid token' });
@@ -96,7 +102,8 @@ const services = [
   { prefix: '/auth', envVar: 'IDENTITY_SERVICE_URL', default: 'http://localhost:3001', rewritePrefix: '/auth' },
   { prefix: '/academic', envVar: 'ACADEMIC_SERVICE_URL', default: 'http://localhost:3002', rewritePrefix: '/academic' },
   { prefix: '/socioeconomic', envVar: 'SOCIOECONOMIC_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/socioeconomic' },
-  { prefix: '/documents', envVar: 'DOCUMENT_SERVICE_URL', default: 'http://localhost:3004', rewritePrefix: '/documents' },
+  { prefix: '/api/documents', envVar: 'DOCUMENT_SERVICE_URL', default: 'http://localhost:8084', rewritePrefix: '/api/documents' },
+  { prefix: '/documents', envVar: 'DOCUMENT_SERVICE_URL', default: 'http://localhost:8084', rewritePrefix: '/documents' },
   { prefix: '/audit', envVar: 'AUDIT_SERVICE_URL', default: 'http://localhost:3005', rewritePrefix: '/audit' },
   { prefix: '/saga', envVar: 'SAGA_SERVICE_URL', default: 'http://localhost:3006', rewritePrefix: '/saga' },
   { prefix: '/financial', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3007', rewritePrefix: '/financial' },

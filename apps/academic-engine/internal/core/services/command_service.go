@@ -8,6 +8,7 @@ import (
 	mrand "math/rand"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/domain"
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/ports"
@@ -39,6 +40,7 @@ func NewCommandService(cmdRepo ports.CommandRepository, queryRepo ports.QueryRep
 }
 
 func (s *commandService) SeedDatabase(count int) error {
+	mrand.Seed(time.Now().UnixNano())
 	for i := 0; i < count; i++ {
 		fac := uceFaculties[i%len(uceFaculties)]
 		gpa := math.Round((10.0+mrand.Float64()*10.0)*100) / 100

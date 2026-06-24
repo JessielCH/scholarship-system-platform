@@ -22,15 +22,14 @@ variable "subnet_ids" {
   type        = list(string)
   description = "List of subnet IDs for the ASG"
 }
-
 variable "security_group_ids" {
   type        = list(string)
   description = "List of security group IDs for the instances"
 }
 
-variable "target_group_arn" {
-  type        = string
-  description = "ARN of the ALB Target Group to attach the ASG to"
+variable "target_group_arns" {
+  type        = list(string)
+  description = "List of ARNs of the ALB Target Groups to attach the ASG to"
 }
 
 variable "min_size" {
@@ -55,4 +54,10 @@ variable "associate_public_ip" {
   type        = bool
   description = "Whether to associate a public IP address"
   default     = false
+}
+
+variable "key_name" {
+  type        = string
+  description = "The key name to use for the instance"
+  default     = null
 }

@@ -2,7 +2,7 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "develop", "QA", "main", "feat/*" ]
+    branches: [ "develop", "QA", "main", "staging", "feat/*" ]
   pull_request:
     branches: [ "develop" ]
 
@@ -23,6 +23,7 @@ jobs:
             student-portal: 'apps/student-portal/**'
             academic-engine: 'apps/academic-engine/**'
             socioeconomic-validator: 'apps/socioeconomic-validator/**'
+            document-service: 'apps/document-service/**'
 
   lint-and-test:
     name: Build, Lint & Test (Monorepo)

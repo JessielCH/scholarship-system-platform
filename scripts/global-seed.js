@@ -95,7 +95,15 @@ async function seed() {
           return;
       }
     } catch (e) {
-      console.log('User table might not exist yet, continuing with seed...');
+      console.log('User table might not exist yet, creating it...');
+      await pgClient.query(`
+        CREATE TABLE IF NOT EXISTS "user" (
+          "id" varchar PRIMARY KEY,
+          "email" varchar UNIQUE NOT NULL,
+          "passwordHash" varchar NOT NULL,
+          "role" varchar NOT NULL DEFAULT 'STUDENT'
+        );
+      `);
     }
 
     // Generate one hash to reuse for all synthetic students to save massive CPU time
@@ -104,7 +112,6 @@ async function seed() {
     const sharedHash = await bcrypt.hash('student123', salt);
 
     console.log('Clearing old synthetic students from Postgres...');
-    await pgClient.query('ALTER TABLE "user" ALTER COLUMN id TYPE varchar(255);');
     await pgClient.query("DELETE FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
     
     console.log('Clearing old cache from Redis...');

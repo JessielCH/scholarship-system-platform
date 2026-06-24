@@ -75,3 +75,42 @@ module "ec2_database" {
   instance_type      = "t2.micro"
   user_data          = local.docker_install_script
 }
+
+resource "aws_s3_bucket" "database_backups" {
+  bucket        = "uce-distribuida-qa-database-backups"
+  force_destroy = true
+
+  tags = {
+    Environment = "qa"
+    Purpose     = "Database Backups"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "database_backups_lifecycle" {
+  bucket = aws_s3_bucket.database_backups.id
+
+  rule {
+    id     = "retention-15-days"
+    status = "Enabled"
+
+    expiration {
+      days = 15
+    }
+  }
+}
+
+data "aws_caller_identity" "current" {}
+
+resource "aws_s3_bucket" "documents" {
+  bucket        = "uce-distribuida-qa-documents-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
+
+  tags = {
+    Environment = "qa"
+    Purpose     = "Encrypted Documents Storage"
+  }
+}
+
+output "documents_bucket_name" {
+  value = aws_s3_bucket.documents.id
+}
