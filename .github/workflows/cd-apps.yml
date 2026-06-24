@@ -439,4 +439,4 @@ jobs:
           API_URL: http://${{ secrets.EDGE_PUBLIC_IP }}:3000
         with:
           filename: infrastructure/testing/load/k6-script.js
-          flags: --vus 10 --duration 5s
+          flags: --vus 500 --duration 60s
