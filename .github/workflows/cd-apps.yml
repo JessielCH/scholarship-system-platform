@@ -74,12 +74,21 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
           script: |
+            # Setup SSH key for ubuntu user
+            mkdir -p ~/.ssh
+            echo "$SSH_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -H $CORE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            
+            # Setup SSH key for root user
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
@@ -107,7 +116,7 @@ jobs:
             sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
@@ -225,14 +234,26 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
           script: |
+            # Setup SSH key for ubuntu user
+            mkdir -p ~/.ssh
+            echo "$SSH_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -H $CORE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            for IP in $EDGE_PRIVATE_IPS; do
+              ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null
+            done
+            
+            # Setup SSH key for root user
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             for IP in $EDGE_PRIVATE_IPS; do
-              sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts
+              sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             done
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -264,7 +285,7 @@ jobs:
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
@@ -377,14 +398,26 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
           script: |
+            # Setup SSH key for ubuntu user
+            mkdir -p ~/.ssh
+            echo "$SSH_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -H $CORE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            for IP in $EDGE_PRIVATE_IPS; do
+              ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null
+            done
+            
+            # Setup SSH key for root user
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             for IP in $EDGE_PRIVATE_IPS; do
-              sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts
+              sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             done
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -416,7 +449,7 @@ jobs:
             
             # Ensure Docker is installed on private nodes
             for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
-              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh -o StrictHostKeyChecking=no ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
             done
             
             # Database Node
