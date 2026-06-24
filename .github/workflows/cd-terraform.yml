@@ -2,25 +2,26 @@ name: CD Terraform (Infrastructure)
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["CI Pipeline"]
-    types: [completed]
-    branches: ["QA", "main", "staging"]
+  push:
+    branches: ["QA", "staging", "main"]
+    paths:
+      - "infrastructure/terraform/**"
 
 jobs:
   deploy-infra:
     name: Deploy Infrastructure via Terraform
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || (github.ref == 'refs/heads/staging' && 'staging' || 'qa') }}
+    environment: ${{ github.ref_name == 'main' && 'prod' || (github.ref_name == 'staging' && 'staging' || 'qa') }}
     steps:
       - uses: actions/checkout@v4
       
       - name: Set target environment
         id: set-env
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          BRANCH="${{ github.ref_name }}"
+          if [ "$BRANCH" = "main" ]; then
             echo "env_name=prod" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" = "refs/heads/staging" ]; then
+          elif [ "$BRANCH" = "staging" ]; then
             echo "env_name=staging" >> $GITHUB_OUTPUT
           else
             echo "env_name=qa" >> $GITHUB_OUTPUT
