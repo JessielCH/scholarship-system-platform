@@ -24,7 +24,10 @@ export default function DocumentUploadDropzone() {
 
   const fetchDocuments = async (sub: string) => {
     try {
-      const res = await fetch(`/api/documents/student/${sub}`);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/documents/student/${sub}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         setExistingDocs(data);
@@ -100,8 +103,10 @@ export default function DocumentUploadDropzone() {
     formData.append("accountNumber", accountNumber);
 
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch("/api/documents/upload", {
         method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
         body: formData,
       });
 
