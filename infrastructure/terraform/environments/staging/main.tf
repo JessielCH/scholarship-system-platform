@@ -114,3 +114,19 @@ module "ec2_database" {
   instance_type      = "t2.micro"
   user_data          = local.docker_install_script
 }
+
+data "aws_caller_identity" "current" {}
+
+resource "aws_s3_bucket" "documents" {
+  bucket        = "uce-distribuida-staging-documents-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
+
+  tags = {
+    Environment = "staging"
+    Purpose     = "Encrypted Documents Storage"
+  }
+}
+
+output "documents_bucket_name" {
+  value = aws_s3_bucket.documents.id
+}
