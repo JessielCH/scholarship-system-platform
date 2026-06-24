@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import DocumentUploadDropzone from "@/components/DocumentUploadDropzone";
 
 interface AcademicStatus {
   final_score: number;
@@ -100,7 +101,7 @@ export default function Dashboard() {
 
   const handleReview = async (docId: string, status: string, reason?: string) => {
     try {
-      let url = `http://localhost:8084/api/documents/admin/review/${docId}?status=${status}`;
+      let url = `/api/documents/admin/review/${docId}?status=${status}`;
       if (reason) url += `&reason=${encodeURIComponent(reason)}`;
       
       const res = await fetch(url, { method: "PUT" });
@@ -173,7 +174,7 @@ export default function Dashboard() {
 
                   <div className="flex flex-col gap-2 w-full md:w-auto">
                     <a 
-                      href={`http://localhost:8084/api/documents/download/${doc.id}`}
+                      href={`/api/documents/download/${doc.id}`}
                       target="_blank"
                       className="px-4 py-2 bg-blue-600/20 text-blue-300 border border-blue-500/50 rounded-lg hover:bg-blue-600/40 transition text-center text-sm font-bold flex items-center justify-center gap-2"
                     >
@@ -225,13 +226,8 @@ export default function Dashboard() {
               <p className="text-yellow-400">Tu expediente aún no ha sido procesado o no existe.</p>
             )}
             
-            <div className="mt-8">
-              <button 
-                onClick={() => router.push('/documents')}
-                className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold shadow-lg transform hover:-translate-y-1 transition"
-              >
-                Go to Secure Document Vault ➔
-              </button>
+            <div className="mt-8 border-t border-white/10 pt-8">
+              <DocumentUploadDropzone />
             </div>
           </div>
         )}
