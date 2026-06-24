@@ -74,9 +74,21 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            sudo bash -c 'cat > /root/.ssh/config <<EOF
+Host *
+  StrictHostKeyChecking no
+  UserKnownHostsFile /root/.ssh/known_hosts
+  IdentityFile /root/.ssh/id_rsa
+  ConnectTimeout 30
+  ServerAliveInterval 60
+  ServerAliveCountMax 5
+EOF'
+            sudo chmod 600 /root/.ssh/config
+            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
+              for attempt in 1 2 3; do
+                sudo ssh-keyscan -T 10 -H $IP 2>/dev/null | sudo tee -a /root/.ssh/known_hosts && break || sleep 5
+              done
+            done
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
@@ -99,7 +111,7 @@ jobs:
             
             command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker.io)
             if [ ! -f /usr/local/bin/docker-compose ]; then
-              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
             
@@ -224,11 +236,23 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            sudo bash -c 'cat > /root/.ssh/config <<EOF
+Host *
+  StrictHostKeyChecking no
+  UserKnownHostsFile /root/.ssh/known_hosts
+  IdentityFile /root/.ssh/id_rsa
+  ConnectTimeout 30
+  ServerAliveInterval 60
+  ServerAliveCountMax 5
+EOF'
+            sudo chmod 600 /root/.ssh/config
+            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
+              for attempt in 1 2 3; do
+                sudo ssh-keyscan -T 10 -H $IP 2>/dev/null | sudo tee -a /root/.ssh/known_hosts && break || sleep 5
+              done
+            done
             for IP in $EDGE_PRIVATE_IPS; do
-              sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts
+              sudo ssh-keyscan -T 10 -H $IP 2>/dev/null | sudo tee -a /root/.ssh/known_hosts
             done
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -252,7 +276,7 @@ jobs:
             
             command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker.io)
             if [ ! -f /usr/local/bin/docker-compose ]; then
-              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
             
@@ -373,11 +397,23 @@ jobs:
             sudo mkdir -p /root/.ssh
             echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
             sudo chmod 600 /root/.ssh/id_rsa
-            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
-            sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts
+            sudo bash -c 'cat > /root/.ssh/config <<EOF
+Host *
+  StrictHostKeyChecking no
+  UserKnownHostsFile /root/.ssh/known_hosts
+  IdentityFile /root/.ssh/id_rsa
+  ConnectTimeout 30
+  ServerAliveInterval 60
+  ServerAliveCountMax 5
+EOF'
+            sudo chmod 600 /root/.ssh/config
+            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP; do
+              for attempt in 1 2 3; do
+                sudo ssh-keyscan -T 10 -H $IP 2>/dev/null | sudo tee -a /root/.ssh/known_hosts && break || sleep 5
+              done
+            done
             for IP in $EDGE_PRIVATE_IPS; do
-              sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts
+              sudo ssh-keyscan -T 10 -H $IP 2>/dev/null | sudo tee -a /root/.ssh/known_hosts
             done
             
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -401,7 +437,7 @@ jobs:
             
             command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" docker.io)
             if [ ! -f /usr/local/bin/docker-compose ]; then
-              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
             fi
             
