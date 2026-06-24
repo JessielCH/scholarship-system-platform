@@ -238,10 +238,10 @@ jobs:
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             export MONGO_URI="$MONGO_URI"
             
-            # Use dynamic AWS Account ID to find the bucket name
+            # Compute S3 bucket name dynamically from AWS Account ID (same pattern as QA)
             ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep accountId | awk -F\" '{print $4}')
-            export S3_BUCKET_NAME="uce-distribuida-staging-documents-$ACCOUNT_ID"
-
+            export S3_BUCKET_NAME="uce-distribuida-staging-documents-${ACCOUNT_ID}"
+            
             export AES_SECRET_KEY="$AES_SECRET_KEY"
             export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
             export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
@@ -387,9 +387,10 @@ jobs:
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             export MONGO_URI="$MONGO_URI"
             
-            # Use dynamic AWS Account ID to find the bucket name
+            # Compute S3 bucket name dynamically from AWS Account ID (same pattern as QA)
             ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep accountId | awk -F\" '{print $4}')
-            export S3_BUCKET_NAME="uce-distribuida-prod-documents-$ACCOUNT_ID"
+            export S3_BUCKET_NAME="uce-distribuida-prod-documents-${ACCOUNT_ID}"
+            
             export AES_SECRET_KEY="$AES_SECRET_KEY"
             export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
             export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
