@@ -24,7 +24,7 @@ export default function DocumentUploadDropzone() {
 
   const fetchDocuments = async (sub: string) => {
     try {
-      const res = await fetch(`http://localhost:8084/api/documents/student/${sub}`);
+      const res = await fetch(`/api/documents/student/${sub}`);
       if (res.ok) {
         const data = await res.json();
         setExistingDocs(data);
@@ -100,7 +100,7 @@ export default function DocumentUploadDropzone() {
     formData.append("accountNumber", accountNumber);
 
     try {
-      const response = await fetch("http://localhost:8084/api/documents/upload", {
+      const response = await fetch("/api/documents/upload", {
         method: "POST",
         body: formData,
       });
