@@ -2,6 +2,16 @@ name: CD Microservices (Docker & Testing)
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - qa
+          - staging
+          - prod
   workflow_run:
     workflows: ["CD Terraform (Infrastructure)"]
     types: [completed]
@@ -12,7 +22,7 @@ jobs:
     name: Deploy to QA
     runs-on: ubuntu-latest
     environment: qa
-    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/QA') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'qa') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'QA') }}
     steps:
       - uses: actions/checkout@v4
       
@@ -156,7 +166,7 @@ EOF'
     name: Deploy to Staging
     runs-on: ubuntu-latest
     environment: staging
-    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/staging') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'staging') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'staging') }}
     steps:
       - uses: actions/checkout@v4
       
@@ -316,7 +326,7 @@ EOF'
     name: Deploy to Production
     runs-on: ubuntu-latest
     environment: prod
-    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     steps:
       - uses: actions/checkout@v4
       
