@@ -57,7 +57,10 @@ export default function Dashboard() {
 
   const fetchAllDocuments = async () => {
     try {
-      const res = await fetch("http://localhost:8084/api/documents/all");
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/documents/all", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         setDocuments(data);
@@ -100,10 +103,14 @@ export default function Dashboard() {
 
   const handleReview = async (docId: string, status: string, reason?: string) => {
     try {
+      const token = localStorage.getItem("token");
       let url = `/api/documents/admin/review/${docId}?status=${status}`;
       if (reason) url += `&reason=${encodeURIComponent(reason)}`;
       
-      const res = await fetch(url, { method: "PUT" });
+      const res = await fetch(url, { 
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
         setRejectModalOpen(false);
         setRejectReason("");
@@ -111,6 +118,30 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error("Error reviewing doc", err);
+    }
+  };
+
+  const handleDownload = async (docId: string, filename: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/documents/download/${docId}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        alert("Download failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error downloading doc", err);
     }
   };
 
@@ -172,13 +203,12 @@ export default function Dashboard() {
                   </div>
 
                   <div className="flex flex-col gap-2 w-full md:w-auto">
-                    <a 
-                      href={`/api/documents/download/${doc.id}`}
-                      target="_blank"
-                      className="px-4 py-2 bg-blue-600/20 text-blue-300 border border-blue-500/50 rounded-lg hover:bg-blue-600/40 transition text-center text-sm font-bold flex items-center justify-center gap-2"
+                    <button 
+                      onClick={() => handleDownload(doc.id, doc.originalFilename)}
+                      className="px-4 py-2 bg-blue-600/20 text-blue-300 border border-blue-500/50 rounded-lg hover:bg-blue-600/40 transition text-center text-sm font-bold flex items-center justify-center gap-2 cursor-pointer"
                     >
                       📄 View Bank Cert (PDF)
-                    </a>
+                    </button>
                     
                     {doc.status === 'WAITING' && (
                       <div className="flex gap-2 mt-2">
