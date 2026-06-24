@@ -262,15 +262,25 @@ export default function Dashboard() {
         )}
       </div>
 
-      <button 
-        onClick={() => {
-          localStorage.removeItem("token");
-          router.push("/");
-        }}
-        className="mt-6 px-4 py-2 bg-red-600/50 hover:bg-red-500 border border-red-500/50 rounded font-bold transition"
-      >
-        Cerrar Sesión
-      </button>
+      <div className="flex gap-4 mt-6">
+        {role === "ADMIN" && (
+          <button 
+            onClick={() => router.push("/academic")}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded font-bold transition text-white"
+          >
+            ← Back to Academic Engine
+          </button>
+        )}
+        <button 
+          onClick={() => {
+            localStorage.removeItem("token");
+            router.push("/");
+          }}
+          className="px-4 py-2 bg-red-600/50 hover:bg-red-500 border border-red-500/50 rounded font-bold transition"
+        >
+          Cerrar Sesión
+        </button>
+      </div>
 
       {/* Reject Modal */}
       {rejectModalOpen && (
