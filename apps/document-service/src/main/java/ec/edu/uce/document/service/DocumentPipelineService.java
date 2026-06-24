@@ -27,7 +27,7 @@ public class DocumentPipelineService {
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
 
-    public DocumentMetadata processAndStoreDocument(String studentId, MultipartFile file) throws Exception {
+    public DocumentMetadata processAndStoreDocument(String studentId, String idNumber, String accountNumber, MultipartFile file) throws Exception {
         log.info("Starting pipeline for student {} and file {}", studentId, file.getOriginalFilename());
 
         if (file.isEmpty()) {
@@ -60,6 +60,10 @@ public class DocumentPipelineService {
         metadata.setSizeBytes(originalSize);
         metadata.setUploadedAt(LocalDateTime.now());
         metadata.setEncryptionAlgorithm("AES-256-CBC");
+        metadata.setIdNumber(idNumber);
+        metadata.setAccountNumber(accountNumber);
+        metadata.setStatus("WAITING");
+        metadata.setRejectionReason(null);
         
         return documentRepository.save(metadata);
     }
