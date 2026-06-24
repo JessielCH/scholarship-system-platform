@@ -173,6 +173,13 @@ resource "aws_security_group" "database" {
     security_groups = [aws_security_group.edge.id, aws_security_group.core.id]
   }
 
+  ingress {
+    from_port       = 27017
+    to_port         = 27017
+    protocol        = "tcp"
+    security_groups = [aws_security_group.core.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
