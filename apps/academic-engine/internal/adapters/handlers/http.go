@@ -91,7 +91,7 @@ func (h *HttpHandler) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, char := range recordID {
-		if (char < 'a' || char > 'z') && (char < 'A' || char > 'Z') && (char < '0' || char > '9') && char != '-' {
+		if (char < 'a' || char > 'z') && (char < 'A' || char > 'Z') && (char < '0' || char > '9') && char != '-' && char != '_' {
 			http.Error(w, "Invalid record_id format", http.StatusBadRequest)
 			return
 		}
