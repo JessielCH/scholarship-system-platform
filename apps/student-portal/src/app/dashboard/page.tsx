@@ -214,7 +214,7 @@ export default function Dashboard() {
             ) : academicStatus ? (
               <div className="grid grid-cols-2 gap-4 text-left bg-black/40 p-6 rounded-lg border border-white/10">
                 <p className="text-gray-400">Puntaje Final:</p>
-                <p className="font-mono text-green-400 font-bold">{academicStatus.final_score.toFixed(2)}</p>
+                <p className="font-mono text-green-400 font-bold">{(academicStatus.final_score || 0).toFixed(2)}</p>
                 <p className="text-gray-400">Estado de Beca:</p>
                 <p className="font-bold text-blue-400">{academicStatus.scholarship_type || 'PROCESANDO'}</p>
                 <p className="text-gray-400">Promedio (GPA):</p>
