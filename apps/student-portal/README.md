@@ -1,19 +1,34 @@
 # Student Portal
 
 ## Overview
-The Student Portal is the primary client-facing web application for scholarship applicants. It provides a secure, intuitive interface for users to submit applications, monitor evaluation statuses, and interact with the Central University of Ecuador's scholarship systems.
-
-## Architecture & Design
-* **Server-Side Rendering (SSR)**: Built with Next.js to provide optimized initial load times and robust SEO capabilities.
-* **API Proxying**: Implements native Next.js rewrites (`next.config.mjs`) to securely proxy `/api/*` requests to the internal API Gateway, avoiding CORS complexity and abstracting backend topology from the client browser.
-* **Styling**: Utilizes Tailwind CSS for responsive, accessible, and maintainable user interface components.
+The Student Portal is the primary frontend user interface for the Scholarship System Platform. It provides students with a seamless, responsive experience to apply for scholarships, upload documents, and track their application status.
 
 ## Technology Stack
-* **Framework**: Next.js (React)
-* **Language**: TypeScript
-* **Styling**: Tailwind CSS
-* **Build Tool**: Turbopack
+- **Library**: React 19
+- **Build Tool**: Vite (or Next.js)
+- **Styling**: Vanilla CSS / Modules (Modern, premium aesthetics)
+- **Routing**: React Router
 
-## Configuration
-The portal relies on the following essential environment variables:
-* `NEXT_PUBLIC_API_URL`: The fully qualified URL of the target API Gateway. This is evaluated during the build process to bake the routing rules into the production assets.
+## Implementation Details
+- Single Page Application (SPA) communicating exclusively with the `api-gateway`.
+- Implements secure JWT storage and authenticated routing.
+- Designed with high-quality UX/UI, micro-animations, and responsive layouts.
+
+## Setup & Local Development
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+2. **Environment Variables**:
+   Set `VITE_API_GATEWAY_URL=http://localhost:3000` (or equivalent).
+3. **Run locally**:
+   ```bash
+   npm run dev
+   ```
+4. **Build for production**:
+   ```bash
+   npm run build
+   ```
+
+## Build & Deployment
+Served as static files via Nginx or integrated into a Node server on the `edge` EC2 instance, directly exposed to the internet.
