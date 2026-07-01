@@ -1,22 +1,36 @@
-# API Gateway Service
+# API Gateway
 
 ## Overview
-The API Gateway acts as the central ingress point for the Scholarship System Platform. It provides strict security controls, traffic shaping, and intelligent request routing to internal microservices.
-
-## Key Responsibilities
-* **Rate Limiting**: Enforces IP-based request quotas via Redis to mitigate Denial of Service (DoS) attacks and abuse.
-* **Authentication Verification**: Validates asymmetric JWT tokens (RS256) at the edge before routing requests to protected upstream services.
-* **Request Routing**: Proxies HTTP requests to internal microservices (e.g., Identity Service, Academic Engine) based on defined path mappings.
-* **CORS Management**: Enforces strict Cross-Origin Resource Sharing policies to prevent unauthorized web client access.
+The API Gateway is an Express.js-based entry point for the Scholarship System Platform. It routes incoming client requests to the appropriate backend microservices, acting as a reverse proxy, load balancer, and first line of defense for security and rate limiting.
 
 ## Technology Stack
-* **Runtime**: Node.js
-* **Framework**: Fastify
-* **Cache/Storage**: Redis (ioredis)
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Routing**: `http-proxy-middleware`
+- **Testing**: Jest
 
-## Configuration
-The service relies on the following essential environment variables:
-* `PORT`: The port on which the gateway listens (default: 3000).
-* `REDIS_URL`: The connection string for the rate-limiting Redis instance.
-* `JWT_PUBLIC_KEY`: The RS256 public key utilized for token signature verification.
-* `IDENTITY_SERVICE_URL`: The internal network address of the Identity Service.
+## Implementation Details
+- Exposes a unified API surface to frontend clients (`student-portal`).
+- Handles CORS, request logging, and basic request validation.
+- Routes `/api/identity/*` to the `identity-service`.
+- Routes `/api/academic/*` to the `academic-engine`.
+- Routes `/api/documents/*` to the `document-service`.
+
+## Setup & Local Development
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+2. **Environment Variables**:
+   Ensure `.env` contains routing targets (e.g., `IDENTITY_SERVICE_URL`).
+3. **Run locally**:
+   ```bash
+   npm run dev
+   ```
+4. **Run Tests**:
+   ```bash
+   npm run test
+   ```
+
+## Build & Deployment
+Included in the global monorepo build using Turborepo. Deployed via Docker into the `edge` EC2 node in the QA/Production environments.
