@@ -76,6 +76,16 @@ module "ec2_database" {
   user_data          = local.docker_install_script
 }
 
+module "ec2_broker" {
+  source             = "../../modules/ec2"
+  environment        = "qa"
+  service_name       = "broker"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.broker_sg_id]
+  instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
+}
+
 resource "aws_s3_bucket" "database_backups" {
   bucket        = "uce-distribuida-qa-database-backups"
   force_destroy = true
