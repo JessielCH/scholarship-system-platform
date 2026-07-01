@@ -1,23 +1,36 @@
 # Identity Service
 
 ## Overview
-The Identity Service manages core user accounts, authentication lifecycles, and authorization role bindings for the Scholarship System Platform. It functions as the central authority for identity verification.
-
-## Key Responsibilities
-* **User Management**: Handles user registration, profile management, and credential storage.
-* **Authentication**: Provides login endpoints and issues RS256-signed JSON Web Tokens (JWT).
-* **Cryptography**: Utilizes asymmetric cryptography to sign tokens, enabling decentralized token verification across the microservices ecosystem without persistent network calls.
-* **Database Management**: Manages the core relational schemas for identities using TypeORM and PostgreSQL.
+The Identity Service handles authentication, authorization, and user profile management for the Scholarship System Platform. It acts as the central authority for user identity verification.
 
 ## Technology Stack
-* **Runtime**: Node.js
-* **Framework**: NestJS
-* **Database**: PostgreSQL (via TypeORM)
-* **Security**: bcryptjs for password hashing, jsonwebtoken for RS256 asymmetric signatures.
+- **Framework**: NestJS (TypeScript)
+- **Database**: PostgreSQL (via TypeORM)
+- **Caching**: Redis
+- **Messaging**: RabbitMQ (`amqplib`) / Apache Kafka
+- **Authentication**: JWT, bcryptjs
 
-## Configuration
-The service relies on the following essential environment variables:
-* `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`: Database connection parameters.
-* `JWT_PRIVATE_KEY`: The RS256 private key utilized for token generation.
-* `JWT_PUBLIC_KEY`: The RS256 public key.
-* `JWT_EXPIRATION`: Token validity duration (e.g., '1h').
+## Implementation Details
+- Issues JWT tokens for session management.
+- Validates credentials against a PostgreSQL database.
+- Publishes user lifecycle events (e.g., `UserCreated`) to RabbitMQ/Kafka for downstream services to consume asynchronously.
+- Utilizes Redis for fast session retrieval and token blacklisting.
+
+## Setup & Local Development
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+2. **Environment Variables**:
+   Copy `.env.example` to `.env` and set `DB_HOST`, `REDIS_HOST`, and `RABBITMQ_URL`.
+3. **Run locally**:
+   ```bash
+   npm run start:dev
+   ```
+4. **Run Tests**:
+   ```bash
+   npm run test
+   ```
+
+## Build & Deployment
+Dockerized and deployed as a core microservice into the `security` or `core` EC2 nodes. Requires active connections to the dedicated `database` node (Postgres/Redis) and `broker` node (RabbitMQ).
