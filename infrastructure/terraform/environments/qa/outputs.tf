@@ -27,3 +27,8 @@ output "database_private_ip" {
   description = "IP Privada de la instancia Database"
   value       = module.ec2_database.private_ip
 }
+
+output "broker_private_ip" {
+  description = "IP Privada de la instancia Broker"
+  value       = module.ec2_broker.private_ip
+}

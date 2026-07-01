@@ -22,6 +22,10 @@ output "database_private_ip" {
   value = module.ec2_database.private_ip
 }
 
+output "broker_private_ip" {
+  value = module.ec2_broker.private_ip
+}
+
 output "asg_name" {
   value = module.asg_edge.asg_name
 }
