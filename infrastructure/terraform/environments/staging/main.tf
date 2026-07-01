@@ -115,6 +115,16 @@ module "ec2_database" {
   user_data          = local.docker_install_script
 }
 
+module "ec2_broker" {
+  source             = "../../modules/ec2"
+  environment        = "staging"
+  service_name       = "broker"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.broker_sg_id]
+  instance_type      = "t3.small"
+  user_data          = local.docker_install_script
+}
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "documents" {
