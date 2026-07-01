@@ -46,7 +46,8 @@ async function seed() {
     user: DB_USER,
     password: DB_PASSWORD,
     database: 'postgres',
-    port: DB_PORT
+    port: DB_PORT,
+    connectionTimeoutMillis: 5000
   });
 
   const redisClient = new Redis({
@@ -82,7 +83,8 @@ async function seed() {
       user: DB_USER,
       password: DB_PASSWORD,
       database: DB_NAME,
-      port: DB_PORT
+      port: DB_PORT,
+      connectionTimeoutMillis: 5000
     });
 
     await pgClient.connect();

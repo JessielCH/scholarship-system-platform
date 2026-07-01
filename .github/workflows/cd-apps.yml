@@ -133,6 +133,8 @@ jobs:
             done
             
             # Database Node
+            sudo ssh ubuntu@$DATABASE_PRIVATE_IP "mkdir -p scripts"
+            sudo scp -r scripts/* ubuntu@$DATABASE_PRIVATE_IP:~/scripts/
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml up -d
             
