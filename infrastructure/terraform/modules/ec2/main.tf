@@ -40,6 +40,10 @@ resource "aws_instance" "this" {
       encrypted             = true
     }
   }
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }
 
 resource "aws_eip" "this" {
