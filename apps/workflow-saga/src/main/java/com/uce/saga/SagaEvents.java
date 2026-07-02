@@ -1,0 +1,10 @@
+package com.uce.saga;
+
+public enum SagaEvents {
+    VALIDATION_STARTED,
+    VALIDATION_SUCCESS,
+    VALIDATION_FAILED,
+    ALLOCATION_STARTED,
+    ALLOCATION_SUCCESS,
+    ALLOCATION_FAILED
+}
