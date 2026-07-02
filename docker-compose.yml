@@ -16,6 +16,21 @@ services:
       timeout: 3s
       retries: 5
 
+  # Base de Datos Transaccional (Pagos y Sagas)
+  mariadb:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: payment_db
+      MYSQL_USER: payment_user
+      MYSQL_PASSWORD: payment_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - scholarship-net
+
   # Backend Go: Motor Académico
   academic-engine:
     build:
@@ -118,3 +133,4 @@ networks:
 
 volumes:
   redis_data:
+  mariadb_data:
