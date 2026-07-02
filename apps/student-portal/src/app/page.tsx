@@ -1,109 +1,87 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+'use client';
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+import { useQuery } from '@tanstack/react-query';
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+// Mock API call for the happy path
+const fetchSagaStatus = async () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        status: 'FUNDS_ALLOCATED',
+        studentName: 'Juan Pérez',
+        amount: 500,
+        currency: 'USD',
       });
+    }, 2000);
+  });
+};
 
-      if (!res.ok) {
-        const data: unknown = await res.json();
-        throw new Error((data as { error?: string }).error || "Login failed");
-      }
-
-      const data = await res.json();
-      localStorage.setItem("token", data.access_token);
-
-      try {
-        const payloadBase64 = data.access_token.split(".")[1];
-        const decodedJson = atob(payloadBase64);
-        const payload = JSON.parse(decodedJson);
-        
-        if (payload.role === "ADMIN") {
-          router.push("/academic");
-        } else {
-          router.push("/dashboard");
-        }
-      } catch {
-        router.push("/dashboard");
-      }
-    } catch (err: unknown) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function Skeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-white p-4">
-      <div className="max-w-md w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 shadow-2xl transition-all duration-300 hover:shadow-indigo-500/50">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">UCE Scholarships</h1>
-          <p className="text-gray-300 mt-2">Welcome back, student</p>
-        </div>
-        
-        {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-200 p-3 rounded-lg mb-6 text-sm text-center">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              className="w-full px-4 py-3 bg-black/30 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              placeholder="student@uce.edu.ec"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              className="w-full px-4 py-3 bg-black/30 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold rounded-lg shadow-lg transform transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-gray-400">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-purple-400 hover:text-purple-300 font-semibold transition-colors">
-            Apply now
-          </Link>
+    <div className="animate-pulse flex space-x-4">
+      <div className="flex-1 space-y-4 py-1">
+        <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-300 rounded"></div>
+          <div className="h-4 bg-gray-300 rounded w-5/6"></div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['sagaStatus'],
+    queryFn: fetchSagaStatus,
+  });
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-white">
+      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
+        <div className="bg-uce-blue p-6 rounded-t-xl text-white text-center">
+          <h1 className="text-3xl font-bold">Universidad Central del Ecuador</h1>
+          <h2 className="text-xl mt-2 text-uce-gold">Sistema de Becas - Flujo Feliz</h2>
+        </div>
+        
+        <div className="bg-white border-x border-b border-gray-200 p-8 shadow-lg rounded-b-xl">
+          <h3 className="text-2xl font-semibold text-uce-red mb-6 border-b-2 border-uce-red inline-block pb-2">
+            Estado de Solicitud de Beca
+          </h3>
+
+          {isLoading ? (
+            <div className="mt-8 space-y-8">
+              <Skeleton />
+              <Skeleton />
+            </div>
+          ) : (
+            <div className="space-y-6 text-gray-800 text-lg">
+              <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <span className="font-semibold">Estudiante:</span>
+                <span>{(data as any).studentName}</span>
+              </div>
+              <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <span className="font-semibold">Estado de Saga:</span>
+                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">
+                  {(data as any).status}
+                </span>
+              </div>
+              <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <span className="font-semibold">Monto Desembolsado:</span>
+                <span className="text-uce-blue font-bold text-xl">
+                  ${(data as any).amount} {(data as any).currency}
+                </span>
+              </div>
+              
+              <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+                <p className="text-sm text-gray-500">
+                  Flujo completado exitosamente integrando <span className="font-semibold text-uce-blue">Spring State Machine (Sagas)</span> y <span className="font-semibold text-uce-red">NestJS (Pagos Stripe)</span>.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }

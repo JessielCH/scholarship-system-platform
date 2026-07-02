@@ -3,20 +3,19 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --uce-blue: #0F2C59;
+  --uce-red: #D32F2F;
+  --uce-gold: #FFC107;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-uce-blue: var(--uce-blue);
+  --color-uce-red: var(--uce-red);
+  --color-uce-gold: var(--uce-gold);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
