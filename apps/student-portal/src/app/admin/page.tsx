@@ -10,14 +10,21 @@ import { LogOut, Search, FileCheck, FileX, Download, UserCheck, ShieldAlert } fr
 import { BulkUpload } from '../../components/BulkUpload';
 
 interface RankingScore {
-  record_id: string;
-  student_id: string;
-  faculty: string;
-  career: string;
-  score: number;
-  type: string;
-  is_top_ten_percent: boolean;
-  is_approved: boolean;
+  RecordID: string;
+  StudentID: string;
+  Faculty: string;
+  Career: string;
+  Score: number;
+  Type: string;
+  IsTopTenPercent: boolean;
+  IsApproved: boolean;
+}
+
+interface DocumentData {
+  id: string;
+  studentId: string;
+  originalFilename: string;
+  status: string;
 }
 
 export default function AdminDashboard() {
@@ -26,6 +33,7 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [facultyFilter, setFacultyFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [activeTab, setActiveTab] = useState<'revision' | 'upload'>('revision');
   const [visibleCount, setVisibleCount] = useState(50); // Pagination limit for performance
 
@@ -50,15 +58,35 @@ export default function AdminDashboard() {
     refetchInterval: 15000,
   });
 
-  const filteredDocs = records.filter((doc: RankingScore) => {
-    const matchSearch = doc.student_id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchFaculty = facultyFilter ? doc.faculty === facultyFilter : true;
-    return matchSearch && matchFaculty;
+  // Fetch documents from Document Service
+  const { data: documents = [], isLoading: isDocsLoading } = useQuery({
+    queryKey: ['adminDocuments'],
+    queryFn: async () => {
+      try {
+        const res = await fetchWithAuth('/documents/all');
+        return (res || []) as DocumentData[];
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    },
+    refetchInterval: 15000,
   });
 
-  const uniqueFaculties = Array.from(new Set(records.map((r: RankingScore) => r.faculty)));
+  const filteredDocs = records.filter((doc: RankingScore) => {
+    if (!doc.Type) return false; // Hide students without scholarship
+    
+    const matchSearch = doc.StudentID?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchFaculty = facultyFilter ? doc.Faculty === facultyFilter : true;
+    
+    const matchType = typeFilter ? doc.Type === typeFilter : true;
+    
+    return matchSearch && matchFaculty && matchType;
+  });
 
-  if (authLoading || isLoading) {
+  const uniqueFaculties = Array.from(new Set(records.map((r: RankingScore) => r.Faculty)));
+
+  if (authLoading || isLoading || isDocsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="h-12 w-12 border-4 border-uce-blue border-t-uce-red rounded-full animate-spin"></div>
@@ -93,18 +121,18 @@ export default function AdminDashboard() {
               <UserCheck size={28} />
             </div>
             <div>
-              <p className="text-sm text-gray-500 font-semibold">Total Expedientes</p>
+              <p className="text-sm text-gray-500 font-semibold">Expedientes Evaluados</p>
               <p className="text-3xl font-bold text-gray-800">{records.length}</p>
             </div>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className="p-4 bg-yellow-50 rounded-full text-yellow-600">
+            <div className="p-4 bg-green-50 rounded-full text-green-600">
               <FileCheck size={28} />
             </div>
             <div>
-              <p className="text-sm text-gray-500 font-semibold">Pendientes Revisión</p>
+              <p className="text-sm text-gray-500 font-semibold">Becas Aprobadas</p>
               <p className="text-3xl font-bold text-gray-800">
-                0
+                {records.filter(r => r.Type).length}
               </p>
             </div>
           </div>
@@ -159,20 +187,44 @@ export default function AdminDashboard() {
                   <option key={f} value={f}>{f}</option>
                 ))}
               </select>
+              <select 
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-uce-blue"
+              >
+                <option value="">Todos los Resultados</option>
+                <option value="EXCELLENCE">Beca Excelencia</option>
+                <option value="VULNERABILITY">Beca Vulnerabilidad</option>
+              </select>
             </div>
           </div>
           
           <div className="space-y-4">
-            {filteredDocs.slice(0, visibleCount).map((doc: RankingScore) => (
-              <div key={doc.record_id} className="p-6 bg-gray-50 border border-gray-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden transition hover:shadow-md">
+            {filteredDocs.slice(0, visibleCount).map((doc: RankingScore) => {
+              const studentDocs = documents.filter((d: DocumentData) => d.studentId === doc.StudentID);
+              const pendingDoc = studentDocs.find((d: DocumentData) => d.status === 'WAITING');
+
+              return (
+              <div key={doc.RecordID} className="p-6 bg-gray-50 border border-gray-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden transition hover:shadow-md">
                 <div className="mb-4 md:mb-0 space-y-1">
-                  <p className="text-sm text-gray-500">Estudiante ID: <span className="font-mono text-gray-800 font-bold">{doc.student_id}</span></p>
-                  <p className="text-sm text-gray-500">Facultad: <span className="font-bold text-gray-800">{doc.faculty}</span></p>
-                  <p className="text-sm text-gray-500">Carrera: <span className="font-bold text-gray-800">{doc.career}</span></p>
-                  <p className="text-sm text-gray-500">Puntaje: <span className="font-bold text-gray-800">{doc.score.toFixed(2)}</span> ({doc.type})</p>
+                  <p className="text-sm text-gray-500">Estudiante ID: <span className="font-mono text-gray-800 font-bold">{doc.StudentID}</span></p>
+                  <p className="text-sm text-gray-500">Facultad: <span className="font-bold text-gray-800">{doc.Faculty}</span></p>
+                  <p className="text-sm text-gray-500">Carrera: <span className="font-bold text-gray-800">{doc.Career}</span></p>
+                  <p className="text-sm text-gray-500">Puntaje: <span className="font-bold text-gray-800">{doc.Score?.toFixed(2)}</span> <span className={`px-2 py-0.5 ml-2 rounded text-xs font-bold ${!doc.Type ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>({doc.Type || 'SIN BECA'})</span></p>
+                  
+                  {pendingDoc && (
+                    <div className="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded-md">
+                       <p className="text-yellow-800 font-bold flex items-center gap-2">
+                         <FileCheck size={16} /> Documento subido: {pendingDoc.originalFilename} (Pendiente Revisión)
+                       </p>
+                       <button className="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                         Revisar Documentos
+                       </button>
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
+            )})}
             
             {filteredDocs.length > visibleCount && (
               <div className="flex justify-center pt-4">

@@ -13,7 +13,6 @@ interface ExcelRow {
   Apellidos: string;
   Facultad: string;
   Semestre: number;
-  TipoBeca: string;
   Promedio: number;
   PuntajeVulnerabilidad: number;
 }
@@ -44,7 +43,7 @@ export function BulkUpload() {
 
         // Simulate AI validating format
         setTimeout(() => {
-          if (parsedData.length > 0 && 'Email' in parsedData[0] && 'TipoBeca' in parsedData[0]) {
+          if (parsedData.length > 0 && 'Email' in parsedData[0] && 'Promedio' in parsedData[0]) {
             setData(parsedData as ExcelRow[]);
             setAiAnalysis('success');
           } else {
@@ -78,13 +77,14 @@ export function BulkUpload() {
 
       // 2. Bulk Insert Academic Records
       const records = rows.map(r => ({
-        id: r.ID,
-        student_id: r.ID,
-        faculty: r.Facultad,
-        career: r.Facultad + ' General',
-        semester: r.Semestre,
-        gpa: r.Promedio,
-        vulnerability_score: r.PuntajeVulnerabilidad
+        ID: r.ID,
+        StudentID: r.ID,
+        Email: r.Email,
+        Faculty: r.Facultad,
+        Career: r.Facultad + ' General',
+        Semester: r.Semestre,
+        GPA: r.Promedio,
+        VulnerabilityScore: r.PuntajeVulnerabilidad
       }));
 
       await fetchWithAuth('/v1/commands/academic/bulk-record', {
@@ -96,6 +96,11 @@ export function BulkUpload() {
       setSuccessMsg(`Se han insertado ${data?.length} registros correctamente.`);
       setData(null);
       setIsProcessing(false);
+      
+      // Force refresh of the admin dashboard records
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     },
     onError: (err: any) => {
       setErrorMsg(err.message || 'Error al procesar la carga.');
@@ -133,7 +138,7 @@ export function BulkUpload() {
                   Para procesar la carga, el sistema utiliza IA para reconocer automáticamente las columnas. Asegúrate de incluir:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {['ID', 'Email', 'Nombres', 'Apellidos', 'Facultad', 'Semestre', 'TipoBeca', 'Promedio', 'PuntajeVulnerabilidad'].map(col => (
+                  {['ID', 'Email', 'Nombres', 'Apellidos', 'Facultad', 'Semestre', 'Promedio', 'PuntajeVulnerabilidad'].map(col => (
                     <span key={col} className="px-2 py-1 bg-white border border-blue-200 text-blue-700 text-[10px] font-mono rounded font-bold">{col}</span>
                   ))}
                 </div>
@@ -165,7 +170,7 @@ export function BulkUpload() {
           {aiAnalysis === 'error' && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl flex items-center gap-3 text-sm font-medium animate-in zoom-in-95">
               <AlertCircle size={18} className="text-red-600" />
-              La IA detectó que el formato no es válido o faltan columnas obligatorias (Ej. Email, TipoBeca).
+              La IA detectó que el formato no es válido o faltan columnas obligatorias (Ej. Email, Promedio).
             </div>
           )}
 
@@ -208,7 +213,6 @@ export function BulkUpload() {
                         <th className="px-4 py-3">ID / Email</th>
                         <th className="px-4 py-3">Estudiante</th>
                         <th className="px-4 py-3">Facultad</th>
-                        <th className="px-4 py-3">Tipo Beca</th>
                         <th className="px-4 py-3">Métricas</th>
                       </tr>
                     </thead>
@@ -221,13 +225,6 @@ export function BulkUpload() {
                           </td>
                           <td className="px-4 py-3 font-medium text-gray-800">{row.Apellidos}, {row.Nombres}</td>
                           <td className="px-4 py-3 text-xs">{row.Facultad} <span className="block text-gray-400">Sem. {row.Semestre}</span></td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded text-[10px] font-bold ${
-                              row.TipoBeca.toLowerCase().includes('excelencia') ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-orange-100 text-orange-800 border border-orange-200'
-                            }`}>
-                              {row.TipoBeca}
-                            </span>
-                          </td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col gap-1 text-xs font-mono">
                               <span className="text-green-700">GPA: {row.Promedio}</span>

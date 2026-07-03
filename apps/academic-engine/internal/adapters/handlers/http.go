@@ -29,7 +29,7 @@ func (h *HttpHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/commands/academic/process", h.RequireRole("ADMIN", h.handleProcess))
 	// Query routes
 	mux.HandleFunc("/api/v1/queries/academic/status", h.RequireRole("STUDENT", h.handleStatus))
-	mux.HandleFunc("/api/v1/queries/academic/rankings", h.RequireRole("ADMIN", h.handleGetAllRankings))
+	mux.HandleFunc("/api/v1/queries/academic/rankings", h.RequireRole("STUDENT", h.handleGetAllRankings)) // Allowed for both STUDENT and ADMIN (ADMIN is allowed by default in RequireRole)
 }
 
 // RequireRole is a simple middleware to simulate RBAC logic from the Identity Service.
@@ -78,6 +78,11 @@ func (h *HttpHandler) handleBulkRecord(w http.ResponseWriter, r *http.Request) {
 	if err := h.cmdService.BulkInsertRecords(payload.Records); err != nil {
 		http.Error(w, "Error saving records in bulk", http.StatusInternalServerError)
 		return
+	}
+
+	// Trigger calculation automatically after bulk ingest
+	if err := h.cmdService.ProcessAll(); err != nil {
+		logrus.Errorf("Error calculating rankings after bulk insert: %v", err)
 	}
 
 	w.WriteHeader(http.StatusOK)

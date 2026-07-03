@@ -152,6 +152,7 @@ func (s *commandService) processGroup(records []domain.AcademicRecord) ([]domain
 		score := domain.RankingScore{
 			RecordID:  r.ID,
 			StudentID: r.StudentID,
+			Email:     r.Email,
 			Faculty:   r.Faculty,
 			Career:    r.Career,
 			Score:     r.GPA,
