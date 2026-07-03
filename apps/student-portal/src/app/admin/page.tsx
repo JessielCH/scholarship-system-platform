@@ -214,12 +214,44 @@ export default function AdminDashboard() {
                   
                   {pendingDoc && (
                     <div className="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded-md">
-                       <p className="text-yellow-800 font-bold flex items-center gap-2">
+                       <p className="text-yellow-800 font-bold flex items-center gap-2 mb-2">
                          <FileCheck size={16} /> Documento subido: {pendingDoc.originalFilename} (Pendiente Revisión)
                        </p>
-                       <button className="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs font-bold transition">
-                         Revisar Documentos
-                       </button>
+                       <div className="flex gap-2">
+                         <button 
+                           onClick={async () => {
+                             try {
+                               await fetchWithAuth(`/documents/admin/review/${pendingDoc.id}?status=APPROVED`, {
+                                 method: 'PUT'
+                               });
+                               queryClient.invalidateQueries({ queryKey: ['adminDocuments'] });
+                               alert('Documento Aprobado con éxito. Se iniciará el desembolso.');
+                             } catch (e) {
+                               alert('Error al aprobar');
+                             }
+                           }}
+                           className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                           Aprobar
+                         </button>
+                         <button 
+                           onClick={async () => {
+                             const reason = prompt("Motivo de rechazo:");
+                             if (reason) {
+                               try {
+                                 await fetchWithAuth(`/documents/admin/review/${pendingDoc.id}?status=REJECTED&reason=${encodeURIComponent(reason)}`, {
+                                   method: 'PUT'
+                                 });
+                                 queryClient.invalidateQueries({ queryKey: ['adminDocuments'] });
+                                 alert('Documento Rechazado');
+                               } catch (e) {
+                                 alert('Error al rechazar');
+                               }
+                             }
+                           }}
+                           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                           Rechazar
+                         </button>
+                       </div>
                     </div>
                   )}
                 </div>
