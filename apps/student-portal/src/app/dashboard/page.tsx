@@ -30,13 +30,20 @@ export default function StudentDashboard() {
   const { data: scholarship, isLoading, refetch } = useQuery({
     queryKey: ['sagaStatus', user?.sub],
     queryFn: async () => {
-      // In a real system we would fetch the specific user's saga state.
-      // fetchWithAuth(`/saga/status/${user.sub}`)
-      // For presentation we simulate the payload the Saga would return
+      // Fetch rankings to see if student was awarded a scholarship
+      const rankings = await fetchWithAuth('/v1/queries/academic/rankings');
+      const myRanking = rankings?.find((r: any) => r.StudentID === user?.sub);
+
+      if (!myRanking || !myRanking.Type) {
+        return { status: 'NOT_BENEFICIARY', studentId: user?.sub };
+      }
+
+      // If they have a scholarship, we simulate the saga status for the UI demo
       return {
         status: 'WAITING', // 'SELECTED', 'WAITING', 'VALIDATED', 'ACADEMIC_OK', 'APPROVED', 'DISBURSED', 'REJECTED'
         studentId: user?.sub,
-        amount: 500,
+        amount: myRanking.Type === 'EXCELLENCE' ? 800 : 500,
+        type: myRanking.Type,
         documents: [],
       };
     },
@@ -72,17 +79,31 @@ export default function StudentDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-6 mt-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8 text-center">
-          <h2 className="text-3xl font-extrabold text-gray-800 mb-2">¡Bienvenido a tu Beca!</h2>
-          <p className="text-gray-500">
-            Sigue los pasos a continuación para completar tu proceso y recibir el desembolso.
-          </p>
-        </div>
+        {scholarship?.status === 'NOT_BENEFICIARY' ? (
+          <div className="bg-white rounded-xl shadow-sm border border-red-100 p-12 text-center animate-in zoom-in-95">
+            <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LogOut size={32} className="text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Hola, {user?.email}</h2>
+            <p className="text-gray-600 max-w-md mx-auto">
+              Lo sentimos, tras evaluar tus promedios y situación socioeconómica, 
+              no resultaste beneficiario de una beca para el actual período académico.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8 text-center animate-in fade-in">
+              <h2 className="text-3xl font-extrabold text-gray-800 mb-2">¡Hola, {user?.email}!</h2>
+              <h3 className="text-xl font-bold text-uce-blue mb-2">¡Felicidades, ganaste la Beca {scholarship?.type === 'EXCELLENCE' ? 'por Excelencia' : 'por Vulnerabilidad'}!</h3>
+              <p className="text-gray-500">
+                Sigue los pasos a continuación para completar tu proceso y recibir el desembolso de ${scholarship?.amount}.
+              </p>
+            </div>
 
-        {/* Timeline */}
-        <div className="mb-8">
-          <Timeline currentStatus={scholarship?.status || 'SELECTED'} />
-        </div>
+            {/* Timeline */}
+            <div className="mb-8">
+              <Timeline currentStatus={scholarship?.status || 'SELECTED'} />
+            </div>
 
         {/* Action Area depending on Status */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
@@ -153,6 +174,8 @@ export default function StudentDashboard() {
           )}
 
         </div>
+        </>
+        )}
       </main>
 
       <FloatingChatbot />

@@ -4,6 +4,7 @@ package domain
 type AcademicRecord struct {
 	ID                 string
 	StudentID          string
+	Email              string
 	Faculty            string // One of the 21 UCE faculties
 	Career             string
 	Semester           int
@@ -34,6 +35,7 @@ const (
 type RankingScore struct {
 	RecordID        string
 	StudentID       string
+	Email           string
 	Faculty         string
 	Career          string
 	Score           float64
