@@ -38,9 +38,30 @@ export default function StudentDashboard() {
         return { status: 'NOT_BENEFICIARY', studentId: user?.sub };
       }
 
+      let currentStatus = 'WAITING';
+      let rejectionReason = '';
+      try {
+        const documents = await fetchWithAuth(`/documents/student/${user?.sub}`);
+        if (documents && documents.length > 0) {
+          // Get most recent document
+          const latestDoc = documents[documents.length - 1];
+          if (latestDoc.status === 'REJECTED') {
+             currentStatus = 'REJECTED';
+             rejectionReason = latestDoc.rejectionReason || 'Documento no válido.';
+          } else if (latestDoc.status === 'APPROVED') {
+             currentStatus = 'APPROVED'; // Or DISBURSED if saga is done, but we use APPROVED for now
+          } else if (latestDoc.status === 'WAITING') {
+             currentStatus = 'VALIDATING_DOC';
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching documents", e);
+      }
+
       // If they have a scholarship, we simulate the saga status for the UI demo
       return {
-        status: 'WAITING', // 'SELECTED', 'WAITING', 'VALIDATED', 'ACADEMIC_OK', 'APPROVED', 'DISBURSED', 'REJECTED'
+        status: currentStatus,
+        rejectionReason: rejectionReason,
         studentId: user?.sub,
         amount: myRanking.Type === 'EXCELLENCE' ? 800 : 500,
         type: myRanking.Type,
@@ -130,6 +151,45 @@ export default function StudentDashboard() {
             </div>
           )}
 
+          {scholarship?.status === 'REJECTED' && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 p-4 rounded-lg flex items-start gap-4">
+                <FileText className="text-red-600 mt-1" />
+                <div>
+                  <h4 className="font-bold text-red-800">Documento Rechazado</h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    Tu documento fue revisado pero ha sido rechazado por el siguiente motivo: 
+                    <br/><br/>
+                    <strong className="bg-red-100 p-2 rounded block">{scholarship.rejectionReason}</strong>
+                    <br/>
+                    Por favor, sube el documento correcto para continuar con tu trámite.
+                  </p>
+                  <button 
+                    onClick={() => setShowBankModal(true)}
+                    className="mt-4 bg-uce-red hover:bg-red-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm"
+                  >
+                    Volver a Subir Certificado Bancario
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {scholarship?.status === 'VALIDATING_DOC' && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex items-start gap-4">
+                <FileText className="text-blue-600 mt-1" />
+                <div>
+                  <h4 className="font-bold text-blue-800">Documento en Revisión</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Hemos recibido tu documento correctamente. Actualmente está siendo revisado por el coordinador.
+                    Te notificaremos cuando sea aprobado o si necesitas subirlo nuevamente.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {scholarship?.status === 'ACADEMIC_OK' && (
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex items-start gap-4">
@@ -169,7 +229,7 @@ export default function StudentDashboard() {
             </div>
           )}
           
-          {scholarship?.status !== 'WAITING' && scholarship?.status !== 'ACADEMIC_OK' && scholarship?.status !== 'APPROVED' && scholarship?.status !== 'DISBURSED' && (
+          {scholarship?.status !== 'WAITING' && scholarship?.status !== 'VALIDATING_DOC' && scholarship?.status !== 'REJECTED' && scholarship?.status !== 'ACADEMIC_OK' && scholarship?.status !== 'APPROVED' && scholarship?.status !== 'DISBURSED' && (
              <p className="text-gray-500 italic">No tienes acciones pendientes en este momento. Te notificaremos cuando haya actualizaciones.</p>
           )}
 
