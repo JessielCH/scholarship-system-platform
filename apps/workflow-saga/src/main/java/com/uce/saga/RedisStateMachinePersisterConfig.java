@@ -5,8 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.statemachine.StateMachinePersist;
 import org.springframework.statemachine.persist.RepositoryStateMachinePersist;
-import org.springframework.statemachine.redis.RedisStateMachineContextRepository;
-import org.springframework.statemachine.redis.RedisStateMachinePersister;
+import org.springframework.statemachine.data.redis.RedisStateMachineContextRepository;
+import org.springframework.statemachine.data.redis.RedisStateMachinePersister;
 
 @Configuration
 public class RedisStateMachinePersisterConfig {

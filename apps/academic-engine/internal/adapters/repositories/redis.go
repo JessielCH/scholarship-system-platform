@@ -60,6 +60,29 @@ func (r *RedisRepository) SaveRecord(record domain.AcademicRecord) error {
 	return err
 }
 
+// BulkSaveRecords stores multiple academic records in Redis using a single pipeline
+func (r *RedisRepository) BulkSaveRecords(records []domain.AcademicRecord) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	pipe := r.client.Pipeline()
+	for _, record := range records {
+		data, err := json.Marshal(record)
+		if err != nil {
+			return err
+		}
+
+		key := fmt.Sprintf("%s%s", recordPrefix, record.ID)
+		
+		pipe.Set(ctx, key, data, ttlDuration)
+		pipe.SAdd(ctx, fmt.Sprintf("%s%s", facultyIndex, record.Faculty), record.ID)
+		pipe.HSet(ctx, recordsHashKey, record.ID, data)
+	}
+
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
 // GetRecordsByFacultyAndCareer retrieves records filtered by faculty and career
 func (r *RedisRepository) GetRecordsByFacultyAndCareer(faculty, career string) ([]domain.AcademicRecord, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

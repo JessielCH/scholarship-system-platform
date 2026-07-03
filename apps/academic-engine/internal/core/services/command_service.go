@@ -65,6 +65,13 @@ func (s *commandService) SeedDatabase(count int) error {
 	return nil
 }
 
+func (s *commandService) BulkInsertRecords(records []domain.AcademicRecord) error {
+	if len(records) == 0 {
+		return nil
+	}
+	return s.cmdRepo.BulkSaveRecords(records)
+}
+
 func generateUUID() string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)

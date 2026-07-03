@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.config.StateMachineFactory;
-import org.springframework.statemachine.redis.RedisStateMachinePersister;
+import org.springframework.statemachine.data.redis.RedisStateMachinePersister;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 

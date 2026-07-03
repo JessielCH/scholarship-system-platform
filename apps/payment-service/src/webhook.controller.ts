@@ -1,4 +1,5 @@
-import { Controller, Post, Req, Headers, BadRequestException, RawBodyRequest } from '@nestjs/common';
+import { Controller, Post, Req, Headers, BadRequestException } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { Request } from 'express';
 
@@ -18,7 +19,7 @@ export class WebhookController {
     let event;
     try {
       event = this.stripeService.constructEvent(
-        req.rawBody,
+        req.rawBody as Buffer,
         signature,
         process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test'
       );
