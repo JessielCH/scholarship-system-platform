@@ -99,4 +99,46 @@ export class AuthService implements OnModuleInit {
 
     return { message: 'User registered successfully', email: user.email };
   }
+
+  async bulkRegister(body: any) {
+    if (!body.users || !Array.isArray(body.users) || body.users.length === 0) {
+      throw new BadRequestException('An array of users is required');
+    }
+
+    const defaultPassword = body.defaultPassword || 'student123';
+    this.logger.log(`Starting bulk register for ${body.users.length} users... generating shared hash.`);
+    
+    // Use a single hash for all users in the batch to avoid CPU exhaustion
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(defaultPassword, salt);
+
+    const usersToInsert = body.users.map((u: any) => {
+      return this.userRepository.create({
+        id: u.id,
+        email: u.email,
+        passwordHash: passwordHash,
+        role: u.role || 'STUDENT'
+      });
+    });
+
+    // We can use save() with an array, which TypeORM handles efficiently, or insert() for even faster non-cascading bulk inserts.
+    // We use insert but wrap in try-catch to ignore duplicates or handle them.
+    // For upserting (if they already exist), we can use queryBuilder.
+    try {
+      this.logger.log(`Executing bulk insert...`);
+      await this.userRepository
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values(usersToInsert)
+        .orIgnore() // Ignore on conflict
+        .execute();
+      this.logger.log(`Bulk insert completed.`);
+    } catch (e: any) {
+      this.logger.error(`Error in bulk insert: ${e.message}`);
+      throw new BadRequestException('Error during bulk insertion');
+    }
+
+    return { message: `Successfully processed ${body.users.length} users for bulk registration` };
+  }
 }

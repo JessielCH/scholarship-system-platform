@@ -40,4 +40,21 @@ export class AuthController {
   async register(@Body() body: any) {
     return this.authService.register(body);
   }
+
+  @Post('bulk-register')
+  @ApiOperation({ summary: 'Register multiple users efficiently' })
+  @ApiBody({
+    schema: {
+      example: {
+        defaultPassword: 'student123',
+        users: [
+          { id: 'usr-1', email: 'stu1@uce.edu.ec', role: 'STUDENT' }
+        ]
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Users registered' })
+  async bulkRegister(@Body() body: any) {
+    return this.authService.bulkRegister(body);
+  }
 }

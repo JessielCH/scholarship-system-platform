@@ -26,6 +26,15 @@ func (r *MemoryRepository) SaveRecord(record domain.AcademicRecord) error {
 	return nil
 }
 
+func (r *MemoryRepository) BulkSaveRecords(records []domain.AcademicRecord) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, record := range records {
+		r.records[record.ID] = record
+	}
+	return nil
+}
+
 func (r *MemoryRepository) GetRecordsByFacultyAndCareer(faculty, career string) ([]domain.AcademicRecord, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
