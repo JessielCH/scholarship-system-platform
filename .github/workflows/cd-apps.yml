@@ -110,6 +110,11 @@ jobs:
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             export MONGO_URI="$MONGO_URI"
+            export DATABASE_PRIVATE_IP="$DATABASE_PRIVATE_IP"
+            export BROKER_PRIVATE_IP="$BROKER_PRIVATE_IP"
+            export CORE_PRIVATE_IP="$CORE_PRIVATE_IP"
+            export SECURITY_PRIVATE_IP="$SECURITY_PRIVATE_IP"
+            export COMPUTE_PRIVATE_IP="$COMPUTE_PRIVATE_IP"
             
             export S3_BUCKET_NAME="uce-distribuida-qa-documents-${AWS_ACCOUNT_ID}"
             
@@ -295,6 +300,11 @@ jobs:
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             export MONGO_URI="$MONGO_URI"
+            export DATABASE_PRIVATE_IP="$DATABASE_PRIVATE_IP"
+            export BROKER_PRIVATE_IP="$BROKER_PRIVATE_IP"
+            export CORE_PRIVATE_IP="$CORE_PRIVATE_IP"
+            export SECURITY_PRIVATE_IP="$SECURITY_PRIVATE_IP"
+            export COMPUTE_PRIVATE_IP="$COMPUTE_PRIVATE_IP"
             
             export S3_BUCKET_NAME="uce-distribuida-staging-documents-${AWS_ACCOUNT_ID}"
             
@@ -473,6 +483,11 @@ jobs:
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
             export MONGO_URI="$MONGO_URI"
+            export DATABASE_PRIVATE_IP="$DATABASE_PRIVATE_IP"
+            export BROKER_PRIVATE_IP="$BROKER_PRIVATE_IP"
+            export CORE_PRIVATE_IP="$CORE_PRIVATE_IP"
+            export SECURITY_PRIVATE_IP="$SECURITY_PRIVATE_IP"
+            export COMPUTE_PRIVATE_IP="$COMPUTE_PRIVATE_IP"
             
             export S3_BUCKET_NAME="uce-distribuida-prod-documents-${AWS_ACCOUNT_ID}"
             
