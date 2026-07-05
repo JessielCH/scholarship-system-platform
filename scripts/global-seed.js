@@ -90,12 +90,20 @@ async function seed() {
     await pgClient.connect();
     console.log(`Connected to PostgreSQL (${DB_NAME})`);
 
+    const academicClient = new Client({
+      host: DB_HOST,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      database: 'academicdb',
+      port: DB_PORT,
+      connectionTimeoutMillis: 5000
+    });
+
+    await academicClient.connect();
+    console.log(`Connected to PostgreSQL (academicdb)`);
+
     try {
-      const countRes = await pgClient.query('SELECT COUNT(*) FROM "user"');
-      if (parseInt(countRes.rows[0].count) >= TOTAL_RECORDS) {
-          console.log(`Already found ${countRes.rows[0].count} records. Skipping seed.`);
-          return;
-      }
+      // Bypassed check to force full re-seed
     } catch (e) {
       console.log('User table might not exist yet, creating it...');
       await pgClient.query(`
@@ -114,6 +122,7 @@ async function seed() {
     const sharedHash = await bcrypt.hash('student123', salt);
 
     console.log('Clearing old synthetic students from Postgres...');
+    await academicClient.query("DELETE FROM academic_records WHERE student_id LIKE 'student_%'");
     await pgClient.query("DELETE FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
     
     console.log('Clearing old cache from Redis...');
@@ -125,6 +134,7 @@ async function seed() {
 
     for (let i = 0; i < TOTAL_RECORDS; i += BATCH_SIZE) {
       let pgValues = [];
+      let academicValues = [];
       let redisPipeline = redisClient.pipeline();
 
       for (let j = 0; j < BATCH_SIZE; j++) {
@@ -136,12 +146,16 @@ async function seed() {
         // Postgres User value string
         pgValues.push(`('${id}', '${email}', '${sharedHash}', 'STUDENT')`);
 
-        // Redis Academic Record
+        // Academic Record values
         const fac = uceFaculties[idx % uceFaculties.length];
         const gpa = Math.round((10.0 + Math.random() * 10.0) * 100) / 100;
         const vuln = Math.round((Math.random() * 100.0) * 100) / 100;
         const semester = Math.floor(Math.random() * 8) + 3;
 
+        // Add to Postgres bulk insert
+        academicValues.push(`('${id}', '${fac}', '${fac} General', ${semester}, ${gpa}, ${vuln})`);
+
+        // We continue to use Redis as a CACHE for fast reads
         const record = {
           ID: id,
           StudentID: id,
@@ -153,13 +167,16 @@ async function seed() {
         };
 
         const key = `record:${id}`;
-        redisPipeline.set(key, JSON.stringify(record), 'EX', 86400); // 24 hours
+        redisPipeline.set(key, JSON.stringify(record), 'EX', 86400); // 24 hours Cache
         redisPipeline.hset('records:hash', key, JSON.stringify(record));
       }
 
       // Insert Postgres batch
       const query = `INSERT INTO "user" (id, email, "passwordHash", role) VALUES ${pgValues.join(',')}`;
       await pgClient.query(query);
+
+      const academicQuery = `INSERT INTO academic_records (student_id, faculty, career, semester, gpa, vulnerability_score) VALUES ${academicValues.join(',')}`;
+      await academicClient.query(academicQuery);
 
       // Insert Redis batch
       await redisPipeline.exec();
@@ -201,6 +218,9 @@ async function seed() {
   } finally {
     if (pgClient) {
       await pgClient.end();
+    }
+    if (typeof academicClient !== 'undefined') {
+      await academicClient.end();
     }
     redisClient.disconnect();
   }

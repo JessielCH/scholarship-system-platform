@@ -11,7 +11,7 @@ export class StripeService {
     });
   }
 
-  async disburseFunds(amount: number, destination: string) {
+  async disburseFunds(amount: number, destination: string): Promise<any> {
     // In a real scenario we'd use Stripe Connect transfers
     return this.stripe.transfers.create({
       amount: amount,
@@ -20,7 +20,11 @@ export class StripeService {
     });
   }
 
-  constructEvent(payload: string | Buffer, signature: string, secret: string) {
+  constructEvent(
+    payload: string | Buffer,
+    signature: string,
+    secret: string,
+  ): any {
     return this.stripe.webhooks.constructEvent(payload, signature, secret);
   }
 }
