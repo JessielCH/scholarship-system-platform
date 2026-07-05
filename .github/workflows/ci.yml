@@ -128,10 +128,6 @@ jobs:
         working-directory: apps/document-service
         run: mvn clean verify -B
 
-      - name: Build & Test socioeconomic-validator
-        if: contains(toJSON(needs.detect-changes.outputs.services), 'socioeconomic-validator')
-        working-directory: apps/socioeconomic-validator
-        run: mvn clean verify -B
 
   go-build:
     name: Go Build & Test
