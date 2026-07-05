@@ -76,6 +76,16 @@ async function seed() {
     } else {
       console.log(`Database "socioeconomic_db" already exists.`);
     }
+
+    const res3 = await initClient.query(`SELECT 1 FROM pg_database WHERE datname = 'academicdb'`);
+    if (res3.rowCount === 0) {
+      console.log(`Database "academicdb" does not exist. Creating it automatically...`);
+      await initClient.query(`CREATE DATABASE "academicdb"`);
+      console.log(`Database "academicdb" created successfully.`);
+    } else {
+      console.log(`Database "academicdb" already exists.`);
+    }
+
     await initClient.end();
 
     pgClient = new Client({
@@ -102,10 +112,7 @@ async function seed() {
     await academicClient.connect();
     console.log(`Connected to PostgreSQL (academicdb)`);
 
-    try {
-      // Bypassed check to force full re-seed
-    } catch (e) {
-      console.log('User table might not exist yet, creating it...');
+      console.log('Creating tables if they do not exist...');
       await pgClient.query(`
         CREATE TABLE IF NOT EXISTS "user" (
           "id" varchar PRIMARY KEY,
@@ -114,12 +121,31 @@ async function seed() {
           "role" varchar NOT NULL DEFAULT 'STUDENT'
         );
       `);
-    }
+
+      await academicClient.query(`
+        CREATE TABLE IF NOT EXISTS "academic_records" (
+          "student_id" varchar PRIMARY KEY,
+          "faculty" varchar NOT NULL,
+          "career" varchar NOT NULL,
+          "semester" integer NOT NULL,
+          "gpa" double precision NOT NULL,
+          "vulnerability_score" double precision NOT NULL
+        );
+      `);
 
     // Generate one hash to reuse for all synthetic students to save massive CPU time
     console.log('Generating shared bcrypt hash for "student123"...');
     const salt = await bcrypt.genSalt(10);
     const sharedHash = await bcrypt.hash('student123', salt);
+
+    console.log('Checking if database is already seeded...');
+    const userCountRes = await pgClient.query("SELECT COUNT(*) FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
+    const userCount = parseInt(userCountRes.rows[0].count, 10);
+    
+    if (userCount > 9000) {
+      console.log(`Database already has ${userCount} synthetic students. Skipping seed.`);
+      process.exit(0);
+    }
 
     console.log('Clearing old synthetic students from Postgres...');
     await academicClient.query("DELETE FROM academic_records WHERE student_id LIKE 'student_%'");
