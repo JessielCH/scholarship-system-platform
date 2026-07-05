@@ -39,11 +39,18 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - USE_REDIS=true
+      - USE_REDIS=false
       - REDIS_URL=redis://redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123!
+      - DB_NAME=academicdb
       - PORT=8081
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - scholarship-net
@@ -124,6 +131,26 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    networks:
+      - scholarship-net
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: scholarship_rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - scholarship-net
 
@@ -214,7 +241,11 @@ services:
     ports:
       - "3003:3003"
     environment:
+      - PORT=3003
       - DB_HOST=mariadb
+      - DB_USER=payment_user
+      - DB_PASSWORD=payment_password
+      - DB_NAME=payment_db
     networks:
       - scholarship-net
 
@@ -226,10 +257,13 @@ services:
       - "8084:8084"
     environment:
       - MONGO_URI=mongodb://admin:admin@mongodb:27017/documents?authSource=admin
+      - SPRING_RABBITMQ_HOST=rabbitmq
     networks:
       - scholarship-net
     depends_on:
       mongodb:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   socioeconomic-validator:
@@ -254,7 +288,8 @@ services:
     ports:
       - "8083:8083"
     environment:
-      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-1:29092,kafka-2:29093,kafka-3:29094
     networks:
       - scholarship-net
 
@@ -265,5 +300,6 @@ networks:
 volumes:
   redis_data:
   mariadb_data:
+  rabbitmq_data:
   postgres_data:
   mongodb_data:
