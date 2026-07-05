@@ -7,6 +7,11 @@ services:
     environment:
       - USE_REDIS=true
       - REDIS_URL=redis://${DATABASE_PRIVATE_IP:-redis}:6379
+      - DB_HOST=${DATABASE_PRIVATE_IP:-postgres}
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-postgres123!}
+      - DB_NAME=academicdb
       - PORT=8081
     ports:
       - "8081:8081"
