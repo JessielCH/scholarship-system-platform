@@ -86,8 +86,10 @@ module "ec2_broker" {
   user_data          = local.docker_install_script
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_s3_bucket" "database_backups" {
-  bucket        = "uce-distribuida-qa-database-backups"
+  bucket        = "uce-distribuida-qa-database-backups-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 
   tags = {
@@ -102,6 +104,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "database_backups_lifecycle" {
   rule {
     id     = "retention-15-days"
     status = "Enabled"
+
+    filter {
+      prefix = ""
+    }
 
     expiration {
       days = 15
