@@ -1,316 +1,289 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import DocumentUploadDropzone from "@/components/DocumentUploadDropzone";
+'use client';
 
-interface AcademicStatus {
-  Score: number;
-  Type: string;
-  IsApproved: boolean;
-}
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../providers/auth-provider';
+import { useRouter } from 'next/navigation';
+import { fetchWithAuth } from '../../lib/api';
+import { Timeline } from '../../components/Timeline';
+import { BankUploadModal } from '../../components/BankUploadModal';
+import { ContractUploadModal } from '../../components/ContractUploadModal';
+import { FloatingChatbot } from '../../components/FloatingChatbot';
+import { useState, useEffect } from 'react';
+import { LogOut, FileText, CheckCircle2 } from 'lucide-react';
 
-interface DocumentMetadata {
-  id: string;
-  studentId: string;
-  idNumber: string;
-  accountNumber: string;
-  originalFilename: string;
-  status: string;
-  rejectionReason?: string;
-  uploadedAt: string;
-}
-
-export default function Dashboard() {
-  const [role, setRole] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
+export default function StudentDashboard() {
+  const { user, logout, isLoading: authLoading } = useAuth();
   const router = useRouter();
-
-  const [academicStatus, setAcademicStatus] = useState<AcademicStatus | null>(null);
-  const [loadingStatus, setLoadingStatus] = useState(true);
-
-  // Admin states
-  const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [selectedDocId, setSelectedDocId] = useState("");
-  const [rejectReason, setRejectReason] = useState("");
-
-  const fetchStatus = async (sub: string) => {
-    const token = localStorage.getItem("token");
-    try {
-      const res = await fetch(`/api/v1/queries/academic/status?record_id=${sub}`, {
-        method: "GET",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAcademicStatus(data);
-      } else {
-        setAcademicStatus(null);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingStatus(false);
-    }
-  };
-
-  const fetchAllDocuments = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/documents/all", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setDocuments(data);
-      }
-    } catch (err) {
-      console.error("Error fetching docs", err);
-    }
-  };
+  
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/");
-      return;
+    if (!authLoading && (!user || (user.role !== 'STUDENT' && user.role !== 'ADMIN'))) {
+      router.push('/login');
     }
+  }, [user, authLoading, router]);
 
-    try {
-      const payloadBase64 = token.split(".")[1];
-      const decodedJson = atob(payloadBase64);
-      const payload = JSON.parse(decodedJson);
+  // Query to get scholarship status from API Gateway -> Saga Service or Document Service
+  // For this implementation, we will fetch from academic or saga, but since identity might not have it all,
+  // we'll mock the data fetching structure that points to our saga-service.
+  const { data: scholarship, isLoading, refetch } = useQuery({
+    queryKey: ['sagaStatus', user?.sub],
+    queryFn: async () => {
+      try {
+        const rankings = await fetchWithAuth('/v1/queries/academic/rankings') as unknown[];
+        const myRanking = rankings?.find((r: unknown) => (r as Record<string, unknown>).StudentID === user?.sub) as Record<string, unknown>;
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setRole(payload.role || "STUDENT");
-      
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setEmail(payload.email || "");
+        if (!myRanking || !myRanking.Type) {
+          return { status: 'NOT_BENEFICIARY', studentId: user?.sub };
+        }
 
-      if (payload.role === "ADMIN") {
-        fetchAllDocuments();
-      } else {
-        fetchStatus(payload.sub);
+        let currentStatus = 'WAITING';
+        let rejectionReason = '';
+        try {
+          const documents = await fetchWithAuth(`/documents/student/${user?.sub}`);
+          if (documents && documents.length > 0) {
+            // Get most recent document
+            const latestDoc = documents[documents.length - 1];
+            if (latestDoc.status === 'REJECTED') {
+               currentStatus = 'REJECTED';
+               rejectionReason = latestDoc.rejectionReason || 'Documento no válido.';
+            } else if (latestDoc.status === 'APPROVED') {
+               currentStatus = 'APPROVED'; // Or DISBURSED if saga is done, but we use APPROVED for now
+            } else if (latestDoc.status === 'WAITING') {
+               currentStatus = 'VALIDATING_DOC';
+            }
+          }
+        } catch (e) {
+          console.warn("Document service unavailable, continuing with default status");
+        }
+
+        // If they have a scholarship, we simulate the saga status for the UI demo
+        return {
+          status: currentStatus,
+          rejectionReason: rejectionReason,
+          studentId: user?.sub,
+          amount: myRanking.Type === 'EXCELLENCE' ? 800 : 500,
+          type: myRanking.Type,
+          documents: [],
+        };
+      } catch (e) {
+        console.warn("Backend services unavailable:", (e as Error).message);
+        // Return a safe fallback when services are not running
+        return { status: 'SERVICE_UNAVAILABLE', studentId: user?.sub };
       }
-    } catch (e) {
-      console.error("Invalid token", e);
-      router.push("/");
-    }
-   
-  }, [router]);
+    },
+    enabled: !!user?.sub,
+  });
 
-
-  const handleReview = async (docId: string, status: string, reason?: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      let url = `/api/documents/admin/review/${docId}?status=${status}`;
-      if (reason) url += `&reason=${encodeURIComponent(reason)}`;
-      
-      const res = await fetch(url, { 
-        method: "PUT",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setRejectModalOpen(false);
-        setRejectReason("");
-        fetchAllDocuments(); // Refresh list
-      }
-    } catch (err) {
-      console.error("Error reviewing doc", err);
-    }
-  };
-
-  const handleDownload = async (docId: string, filename: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/documents/download/${docId}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      } else {
-        alert("Download failed. Please try again.");
-      }
-    } catch (err) {
-      console.error("Error downloading doc", err);
-    }
-  };
-
-  // Filter docs for Admin
-  const filteredDocs = documents.filter(doc => 
-    doc.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (doc.idNumber && doc.idNumber.includes(searchTerm))
-  );
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="h-12 w-12 border-4 border-uce-blue border-t-uce-red rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white p-10 flex flex-col items-center">
-      <h1 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
-        Welcome to your Dashboard
-      </h1>
-      
-      <div className={`p-8 backdrop-blur rounded-xl max-w-4xl text-center border shadow-xl mb-6 w-full ${role === 'ADMIN' ? 'bg-purple-900/20 border-purple-500 shadow-purple-500/30' : 'bg-white/10 border-white/20'}`}>
-        <h2 className="text-3xl font-extrabold mb-2">
-          {role === "ADMIN" ? "👋 Welcome, Admin" : "👋 Welcome, Student"}
-        </h2>
-        <p className="text-gray-300 font-mono text-sm mb-4">{email}</p>
-        
-        {role === "ADMIN" ? (
-          <div className="mt-8 text-left">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-white">Student Dossiers</h3>
-              <input 
-                type="text" 
-                placeholder="Search by Student ID or Cédula..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-4 py-2 bg-black/50 border border-purple-500/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-            
-            <div className="grid gap-6">
-              {filteredDocs.map(doc => (
-                <div key={doc.id} className="p-6 bg-black/40 border border-purple-500/30 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden">
-                  
-                  {/* Visual Flag for WAITING */}
-                  {doc.status === 'WAITING' && (
-                    <div className="absolute top-0 right-0 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg">
-                      🔔 Student uploaded documents!
-                    </div>
-                  )}
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+      {/* Header */}
+      <header className="bg-uce-blue text-white p-4 shadow-md flex justify-between items-center">
+        <div>
+          <h1 className="text-xl font-bold">Universidad Central del Ecuador</h1>
+          <h2 className="text-sm text-gray-300">Portal del Estudiante</h2>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-sm">{user?.email}</span>
+          <button 
+            onClick={logout}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition"
+          >
+            <LogOut size={16} /> Salir
+          </button>
+        </div>
+      </header>
 
-                  <div className="mb-4 md:mb-0 space-y-1">
-                    <p className="text-sm text-gray-400">Student ID: <span className="font-mono text-white">{doc.studentId}</span></p>
-                    <p className="text-sm text-gray-400">Cédula: <span className="font-mono text-white">{doc.idNumber || 'N/A'}</span></p>
-                    <p className="text-sm text-gray-400">Account #: <span className="font-mono text-white">{doc.accountNumber || 'N/A'}</span></p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${
-                        doc.status === 'WAITING' ? 'bg-yellow-500/20 text-yellow-300' :
-                        doc.status === 'VALIDATED' ? 'bg-green-500/20 text-green-300' :
-                        'bg-red-500/20 text-red-300'
-                      }`}>
-                        {doc.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 w-full md:w-auto">
-                    <button 
-                      onClick={() => handleDownload(doc.id, doc.originalFilename)}
-                      className="px-4 py-2 bg-blue-600/20 text-blue-300 border border-blue-500/50 rounded-lg hover:bg-blue-600/40 transition text-center text-sm font-bold flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      📄 View Bank Cert (PDF)
-                    </button>
-                    
-                    {doc.status === 'WAITING' && (
-                      <div className="flex gap-2 mt-2">
-                        <button 
-                          onClick={() => handleReview(doc.id, 'VALIDATED')}
-                          className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition text-sm font-bold"
-                        >
-                          Approve
-                        </button>
-                        <button 
-                          onClick={() => { setSelectedDocId(doc.id); setRejectModalOpen(true); }}
-                          className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition text-sm font-bold"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              
-              {filteredDocs.length === 0 && (
-                <p className="text-gray-400 text-center py-8">No documents found.</p>
-              )}
+      {/* Main Content */}
+      <main className="flex-1 max-w-5xl w-full mx-auto p-6 mt-8">
+        {scholarship?.status === 'SERVICE_UNAVAILABLE' ? (
+          <div className="bg-white rounded-xl shadow-sm border border-yellow-200 p-12 text-center animate-in zoom-in-95">
+            <div className="bg-yellow-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
             </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Servicios en mantenimiento</h2>
+            <p className="text-gray-600 max-w-md mx-auto mb-4">
+              Los servicios del sistema de becas no están disponibles en este momento. 
+              Por favor, intenta nuevamente en unos minutos.
+            </p>
+            <button 
+              onClick={() => refetch()}
+              className="bg-uce-blue hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold transition"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : scholarship?.status === 'NOT_BENEFICIARY' ? (
+          <div className="bg-white rounded-xl shadow-sm border border-red-100 p-12 text-center animate-in zoom-in-95">
+            <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LogOut size={32} className="text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Hola, {user?.email}</h2>
+            <p className="text-gray-600 max-w-md mx-auto">
+              Lo sentimos, tras evaluar tus promedios y situación socioeconómica, 
+              no resultaste beneficiario de una beca para el actual período académico.
+            </p>
           </div>
         ) : (
-          <div className="text-blue-300 mt-4">
-            <h3 className="text-xl font-bold mb-4 text-white">Tu Estado Académico</h3>
-            {loadingStatus ? (
-              <p>Cargando tu información...</p>
-            ) : academicStatus ? (
-              <div className="grid grid-cols-2 gap-4 text-left bg-black/40 p-6 rounded-lg border border-white/10">
-                <p className="text-gray-400">Puntaje Final:</p>
-                <p className="font-mono text-green-400 font-bold">{(academicStatus.Score || 0).toFixed(2)}</p>
-                <p className="text-gray-400">Estado de Beca:</p>
-                <p className={`font-bold ${academicStatus.IsApproved ? 'text-blue-400' : 'text-red-400'}`}>
-                  {academicStatus.IsApproved ? (academicStatus.Type || 'BECA APROBADA') : 'RECHAZADA'}
-                </p>
-              </div>
-            ) : (
-              <p className="text-yellow-400">Tu expediente aún no ha sido procesado o no existe.</p>
-            )}
-            
-            {academicStatus?.IsApproved && (
-              <div className="mt-8 border-t border-white/10 pt-8">
-                <DocumentUploadDropzone />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex gap-4 mt-6">
-        {role === "ADMIN" && (
-          <button 
-            onClick={() => router.push("/academic")}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded font-bold transition text-white"
-          >
-            ← Back to Academic Engine
-          </button>
-        )}
-        <button 
-          onClick={() => {
-            localStorage.removeItem("token");
-            router.push("/");
-          }}
-          className="px-4 py-2 bg-red-600/50 hover:bg-red-500 border border-red-500/50 rounded font-bold transition"
-        >
-          Cerrar Sesión
-        </button>
-      </div>
-
-      {/* Reject Modal */}
-      {rejectModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-red-500/50 p-6 rounded-2xl w-full max-w-md shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4">Reject Document</h3>
-            <p className="text-sm text-gray-400 mb-4">Please provide a mandatory reason for rejecting this document so the student can fix it.</p>
-            <textarea 
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              className="w-full bg-black/50 border border-white/20 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 mb-4 min-h-[100px]"
-              placeholder="E.g., Bank account number does not match the certificate..."
-            />
-            <div className="flex gap-4">
-              <button 
-                onClick={() => setRejectModalOpen(false)}
-                className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold transition"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleReview(selectedDocId, 'REJECTED', rejectReason)}
-                disabled={!rejectReason.trim()}
-                className="flex-1 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold transition"
-              >
-                Confirm Rejection
-              </button>
+          <>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8 text-center animate-in fade-in">
+              <h2 className="text-3xl font-extrabold text-gray-800 mb-2">¡Hola, {user?.email}!</h2>
+              <h3 className="text-xl font-bold text-uce-blue mb-2">¡Felicidades, ganaste la Beca {scholarship?.type === 'EXCELLENCE' ? 'por Excelencia' : 'por Vulnerabilidad'}!</h3>
+              <p className="text-gray-500">
+                Sigue los pasos a continuación para completar tu proceso y recibir el desembolso de ${scholarship?.amount}.
+              </p>
             </div>
-          </div>
+
+            {/* Timeline */}
+            <div className="mb-8">
+              <Timeline currentStatus={scholarship?.status || 'SELECTED'} />
+            </div>
+
+        {/* Action Area depending on Status */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Acciones Requeridas</h3>
+          
+          {scholarship?.status === 'WAITING' && (
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg flex items-start gap-4">
+                <FileText className="text-yellow-600 mt-1" />
+                <div>
+                  <h4 className="font-bold text-yellow-800">Faltan Documentos</h4>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    Para poder continuar con la validación de tu beca, necesitamos que subas tu 
+                    certificado bancario. Una vez validado, se generará tu contrato.
+                  </p>
+                  <button 
+                    onClick={() => setShowBankModal(true)}
+                    className="mt-4 bg-uce-red hover:bg-red-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm"
+                  >
+                    Subir Certificado Bancario
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {scholarship?.status === 'REJECTED' && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 p-4 rounded-lg flex items-start gap-4">
+                <FileText className="text-red-600 mt-1" />
+                <div>
+                  <h4 className="font-bold text-red-800">Documento Rechazado</h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    Tu documento fue revisado pero ha sido rechazado por el siguiente motivo: 
+                    <br/><br/>
+                    <strong className="bg-red-100 p-2 rounded block">{scholarship.rejectionReason}</strong>
+                    <br/>
+                    Por favor, sube el documento correcto para continuar con tu trámite.
+                  </p>
+                  <button 
+                    onClick={() => setShowBankModal(true)}
+                    className="mt-4 bg-uce-red hover:bg-red-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm"
+                  >
+                    Volver a Subir Certificado Bancario
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {scholarship?.status === 'VALIDATING_DOC' && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex items-start gap-4">
+                <FileText className="text-blue-600 mt-1" />
+                <div>
+                  <h4 className="font-bold text-blue-800">Documento en Revisión</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Hemos recibido tu documento correctamente. Actualmente está siendo revisado por el coordinador.
+                    Te notificaremos cuando sea aprobado o si necesitas subirlo nuevamente.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {scholarship?.status === 'ACADEMIC_OK' && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex items-start gap-4">
+                <FileText className="text-blue-600 mt-1" />
+                <div>
+                  <h4 className="font-bold text-blue-800">Contrato Listo para Firma</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Tu certificado fue validado y hemos generado tu contrato. Por favor, 
+                    descárgalo, fírmalo y vuelve a subirlo aquí.
+                  </p>
+                  <div className="flex gap-4 mt-4">
+                    <button className="bg-white border border-uce-blue text-uce-blue hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm">
+                      Descargar Contrato (PDF)
+                    </button>
+                    <button 
+                      onClick={() => setShowContractModal(true)}
+                      className="bg-uce-blue hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm"
+                    >
+                      Subir Contrato Firmado
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(scholarship?.status === 'APPROVED' || scholarship?.status === 'DISBURSED') && (
+            <div className="bg-green-50 border border-green-200 p-6 rounded-lg text-center">
+              <CheckCircle2 className="mx-auto text-green-500 mb-2" size={48} />
+              <h4 className="font-bold text-green-800 text-xl">¡Todo está listo!</h4>
+              <p className="text-sm text-green-700 mt-2">
+                Tu beca ha sido aprobada exitosamente por la Inteligencia Artificial y el Coordinador.
+                {scholarship?.status === 'DISBURSED' && (
+                  <span className="block mt-2 font-bold text-lg">Monto depositado: $ {scholarship.amount}</span>
+                )}
+              </p>
+            </div>
+          )}
+          
+          {scholarship?.status !== 'WAITING' && scholarship?.status !== 'VALIDATING_DOC' && scholarship?.status !== 'REJECTED' && scholarship?.status !== 'ACADEMIC_OK' && scholarship?.status !== 'APPROVED' && scholarship?.status !== 'DISBURSED' && (
+             <p className="text-gray-500 italic">No tienes acciones pendientes en este momento. Te notificaremos cuando haya actualizaciones.</p>
+          )}
+
         </div>
+        </>
+        )}
+      </main>
+
+      <FloatingChatbot />
+
+      {showBankModal && user?.sub && (
+        <BankUploadModal 
+          studentId={user.sub} 
+          onClose={() => setShowBankModal(false)} 
+          onSuccess={() => {
+            setShowBankModal(false);
+            refetch();
+          }} 
+        />
+      )}
+
+      {showContractModal && user?.sub && (
+        <ContractUploadModal 
+          studentId={user.sub} 
+          onClose={() => setShowContractModal(false)} 
+          onSuccess={() => {
+            setShowContractModal(false);
+            refetch();
+          }} 
+        />
       )}
     </div>
   );

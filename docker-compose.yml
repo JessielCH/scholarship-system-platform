@@ -16,6 +16,21 @@ services:
       timeout: 3s
       retries: 5
 
+  # Base de Datos Transaccional (Pagos y Sagas)
+  mariadb:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: payment_db
+      MYSQL_USER: payment_user
+      MYSQL_PASSWORD: payment_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - scholarship-net
+
   # Backend Go: Motor Académico
   academic-engine:
     build:
@@ -24,11 +39,18 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - USE_REDIS=true
+      - USE_REDIS=false
       - REDIS_URL=redis://redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123!
+      - DB_NAME=academicdb
       - PORT=8081
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - scholarship-net
@@ -112,9 +134,172 @@ services:
     networks:
       - scholarship-net
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: scholarship_rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scholarship-net
+
+  # --- DATABASES ---
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123!
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - scholarship-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:6.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - scholarship-net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- MICROSERVICES ---
+  api-gateway:
+    build:
+      context: ./apps/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - IDENTITY_SERVICE_URL=http://identity-service:3002
+      - ACADEMIC_SERVICE_URL=http://academic-engine:8081
+      - SOCIOECONOMIC_SERVICE_URL=http://socioeconomic-validator:8082
+      - DOCUMENT_SERVICE_URL=http://document-service:8084
+      - AUDIT_SERVICE_URL=http://audit-ledger:8085
+      - SAGA_SERVICE_URL=http://workflow-saga:8083
+      - FINANCIAL_SERVICE_URL=http://payment-service:3003
+      - REDIS_URL=redis://redis:6379
+      - PORT=3001
+    volumes:
+      - ./keys:/app/keys:ro
+    networks:
+      - scholarship-net
+    depends_on:
+      - redis
+
+  identity-service:
+    build:
+      context: ./apps/identity-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - DB_HOST=postgres
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres123!
+      - DB_NAME=identitydb
+      - REDIS_URL=redis://redis:6379
+      - PORT=3002
+    volumes:
+      - ./keys:/app/keys:ro
+    networks:
+      - scholarship-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: ./apps/payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - DB_HOST=mariadb
+      - DB_USER=payment_user
+      - DB_PASSWORD=payment_password
+      - DB_NAME=payment_db
+    networks:
+      - scholarship-net
+
+  document-service:
+    build:
+      context: ./apps/document-service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - MONGO_URI=mongodb://admin:admin@mongodb:27017/documents?authSource=admin
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    networks:
+      - scholarship-net
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  socioeconomic-validator:
+    build:
+      context: ./apps/socioeconomic-validator
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/socioeconomic_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres123!
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    networks:
+      - scholarship-net
+
+  workflow-saga:
+    build:
+      context: ./apps/workflow-saga
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-1:29092,kafka-2:29093,kafka-3:29094
+    networks:
+      - scholarship-net
+
 networks:
   scholarship-net:
     driver: bridge
 
 volumes:
   redis_data:
+  mariadb_data:
+  rabbitmq_data:
+  postgres_data:
+  mongodb_data:

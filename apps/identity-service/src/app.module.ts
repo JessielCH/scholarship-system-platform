@@ -15,8 +15,8 @@ import { User } from './users/user.entity';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'identitydbqa',
       entities: [User],
-      synchronize: true, // Always true for university/demo environments without migrations
-      dropSchema: true, // Drop schema to avoid migration conflicts with ID type changes
+      synchronize: false, // Ensure we don't accidentally drop or mutate schema
+      dropSchema: false, // Drop schema to avoid migration conflicts with ID type changes
     }),
     TypeOrmModule.forFeature([User]),
     AuthModule,
