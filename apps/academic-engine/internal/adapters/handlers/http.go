@@ -80,10 +80,12 @@ func (h *HttpHandler) handleBulkRecord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Trigger calculation automatically after bulk ingest
-	if err := h.cmdService.ProcessAll(); err != nil {
-		logrus.Errorf("Error calculating rankings after bulk insert: %v", err)
-	}
+	// Trigger calculation automatically after bulk ingest asynchronously
+	go func() {
+		if err := h.cmdService.ProcessAll(); err != nil {
+			logrus.Errorf("Error calculating rankings after bulk insert: %v", err)
+		}
+	}()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf(`{"message": "Successfully inserted %d records"}`, len(payload.Records))))
@@ -96,13 +98,15 @@ func (h *HttpHandler) handleProcess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logrus.Info("Starting to process academic records...")
-	err := h.cmdService.ProcessAll()
-	if err != nil {
-		logrus.Errorf("Error calculating rankings: %v", err)
-		http.Error(w, "Error calculating rankings", http.StatusInternalServerError)
-		return
-	}
+	logrus.Info("Starting to process academic records asynchronously...")
+	go func() {
+		err := h.cmdService.ProcessAll()
+		if err != nil {
+			logrus.Errorf("Error calculating rankings: %v", err)
+			return
+		}
+		logrus.Info("Rankings processed successfully.")
+	}()
 
 	logrus.Info("Rankings processed successfully.")
 	w.WriteHeader(http.StatusOK)
