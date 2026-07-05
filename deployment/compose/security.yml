@@ -6,15 +6,15 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3001
-      - DB_HOST=${DATABASE_PRIVATE_IP}
+      - DB_HOST=${DATABASE_PRIVATE_IP:-postgres}
       - DB_PORT=5432
       - DB_USERNAME=postgres
       - DB_PASSWORD=${DB_PASSWORD:-postgres123!}
       - DB_NAME=identitydb
       - NODE_ENV=production
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY}
-      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+      - JWT_SECRET=${JWT_SECRET:-secret}
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:-private}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-public}
     ports:
       - "3001:3001"
     volumes:

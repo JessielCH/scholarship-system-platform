@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/JessielCH/scholarship-system-platform/apps/academic-engine/internal/core/domain"
@@ -24,10 +25,11 @@ func NewHttpHandler(cmd ports.CommandService, qry ports.QueryService) *HttpHandl
 func (h *HttpHandler) RegisterRoutes(mux *http.ServeMux) {
 	// Command routes
 	mux.HandleFunc("/api/v1/commands/academic/seed", h.RequireRole("ADMIN", h.handleSeed))
+	mux.HandleFunc("/api/v1/commands/academic/bulk-record", h.RequireRole("ADMIN", h.handleBulkRecord))
 	mux.HandleFunc("/api/v1/commands/academic/process", h.RequireRole("ADMIN", h.handleProcess))
 	// Query routes
 	mux.HandleFunc("/api/v1/queries/academic/status", h.RequireRole("STUDENT", h.handleStatus))
-	mux.HandleFunc("/api/v1/queries/academic/rankings", h.RequireRole("ADMIN", h.handleGetAllRankings))
+	mux.HandleFunc("/api/v1/queries/academic/rankings", h.RequireRole("STUDENT", h.handleGetAllRankings)) // Allowed for both STUDENT and ADMIN (ADMIN is allowed by default in RequireRole)
 }
 
 // RequireRole is a simple middleware to simulate RBAC logic from the Identity Service.
@@ -56,6 +58,35 @@ func (h *HttpHandler) handleSeed(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Database seeded successfully with 10,000 records"}`))
+}
+
+func (h *HttpHandler) handleBulkRecord(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var payload struct {
+		Records []domain.AcademicRecord `json:"records"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.cmdService.BulkInsertRecords(payload.Records); err != nil {
+		http.Error(w, "Error saving records in bulk", http.StatusInternalServerError)
+		return
+	}
+
+	// Trigger calculation automatically after bulk ingest
+	if err := h.cmdService.ProcessAll(); err != nil {
+		logrus.Errorf("Error calculating rankings after bulk insert: %v", err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf(`{"message": "Successfully inserted %d records"}`, len(payload.Records))))
 }
 
 func (h *HttpHandler) handleProcess(w http.ResponseWriter, r *http.Request) {

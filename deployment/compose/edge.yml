@@ -6,12 +6,15 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3000
-      - REDIS_URL=redis://${DATABASE_PRIVATE_IP}:6379
-      - IDENTITY_SERVICE_URL=http://${SECURITY_PRIVATE_IP}:3001
-      - ACADEMIC_SERVICE_URL=http://${CORE_PRIVATE_IP}:8081
-      - DOCUMENT_SERVICE_URL=http://${CORE_PRIVATE_IP}:8084
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
+      - REDIS_URL=redis://${DATABASE_PRIVATE_IP:-redis}:6379
+      - IDENTITY_SERVICE_URL=http://${SECURITY_PRIVATE_IP:-identity-service}:3001
+      - ACADEMIC_SERVICE_URL=http://${CORE_PRIVATE_IP:-academic-engine}:8081
+      - DOCUMENT_SERVICE_URL=http://${CORE_PRIVATE_IP:-document-service}:8084
+      - SAGA_SERVICE_URL=http://${CORE_PRIVATE_IP:-workflow-saga}:8083
+      - SOCIOECONOMIC_SERVICE_URL=http://${COMPUTE_PRIVATE_IP:-socioeconomic-validator}:8082
+      - FINANCIAL_SERVICE_URL=http://${COMPUTE_PRIVATE_IP:-payment-service}:3003
+      - JWT_SECRET=${JWT_SECRET:-secret}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-public}
     ports:
       - "3000:3000"
     volumes:
