@@ -47,9 +47,7 @@ export class AuthController {
     schema: {
       example: {
         defaultPassword: 'student123',
-        users: [
-          { id: 'usr-1', email: 'stu1@uce.edu.ec', role: 'STUDENT' }
-        ]
+        users: [{ id: 'usr-1', email: 'stu1@uce.edu.ec', role: 'STUDENT' }],
       },
     },
   })

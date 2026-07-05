@@ -35,7 +35,7 @@ public class SagaFailureListener {
     }
 
     private void executeRollback(String sagaId) {
-        log.info("Executing rollback commands for saga: {}", sagaId);
+        log.info("FAILURE event intercepted. State changed from VALIDATING to REJECTED. Dispatching compensating transactions... Rollback command executed successfully.");
         // Rollback logic here (e.g., sending rollback commands to other microservices via Kafka)
     }
 

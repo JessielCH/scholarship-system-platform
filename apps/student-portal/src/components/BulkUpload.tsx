@@ -39,12 +39,12 @@ export function BulkUpload() {
         const wb = xlsx.read(bstr, { type: 'binary' });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const parsedData = xlsx.utils.sheet_to_json(ws) as any[];
+        const parsedData = xlsx.utils.sheet_to_json(ws) as Record<string, unknown>[];
 
         // Simulate AI validating format
         setTimeout(() => {
           if (parsedData.length > 0 && 'Email' in parsedData[0] && 'Promedio' in parsedData[0]) {
-            setData(parsedData as ExcelRow[]);
+            setData(parsedData as unknown as ExcelRow[]);
             setAiAnalysis('success');
           } else {
             setData(null);
@@ -102,8 +102,8 @@ export function BulkUpload() {
         window.location.reload();
       }, 1500);
     },
-    onError: (err: any) => {
-      setErrorMsg(err.message || 'Error al procesar la carga.');
+    onError: (err: Error | unknown) => {
+      setErrorMsg((err as Error).message || 'Error al procesar la carga.');
       setIsProcessing(false);
     }
   });

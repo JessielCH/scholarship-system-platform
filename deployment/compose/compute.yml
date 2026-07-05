@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  payment-service:
+    image: ghcr.io/jessielch/scholarship-system-platform/payment-service:latest
+    container_name: scholarship_payment_service
+    restart: unless-stopped
+    environment:
+      - PORT=3003
+      - DB_HOST=${DATABASE_PRIVATE_IP:-mariadb}
+      - DB_USER=payment_user
+      - DB_PASSWORD=payment_password
+      - DB_NAME=payment_db
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_test}
+    ports:
+      - "3003:3003"
+
+  socioeconomic-validator:
+    image: ghcr.io/jessielch/scholarship-system-platform/socioeconomic-validator:latest
+    container_name: scholarship_socioeconomic
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${DATABASE_PRIVATE_IP:-postgres}:5432/socioeconomic_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-postgres123!}
+      - SPRING_REDIS_HOST=${DATABASE_PRIVATE_IP:-redis}
+      - SPRING_REDIS_PORT=6379
+    ports:
+      - "8082:8082"
