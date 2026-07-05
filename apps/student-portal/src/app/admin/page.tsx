@@ -137,7 +137,17 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center">
-             <button className="bg-uce-blue hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg transition text-sm">
+             <button 
+                onClick={async () => {
+                  try {
+                    await fetchWithAuth('/v1/commands/academic/process', { method: 'POST' });
+                    queryClient.invalidateQueries({ queryKey: ['adminRecords'] });
+                    alert('Datos calculados exitosamente. Actualizando vista...');
+                  } catch (e) {
+                    alert('Error al calcular datos');
+                  }
+                }}
+                className="bg-uce-blue hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg transition text-sm">
                 + Cargar Datos (Ingest)
              </button>
           </div>
