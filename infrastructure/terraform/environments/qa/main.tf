@@ -115,7 +115,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "database_backups_lifecycle" {
   }
 }
 
-data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "documents" {
   bucket        = "uce-distribuida-qa-documents-${data.aws_caller_identity.current.account_id}"
