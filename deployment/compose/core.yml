@@ -7,6 +7,12 @@ services:
     environment:
       - USE_REDIS=true
       - REDIS_URL=redis://${DATABASE_PRIVATE_IP:-redis}:6379
+      - DB_HOST=${DATABASE_PRIVATE_IP:-postgres}
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-postgres123!}
+      - DB_NAME=academicdb
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@${BROKER_PRIVATE_IP:-rabbitmq}:5672/
       - PORT=8081
     ports:
       - "8081:8081"
@@ -25,6 +31,8 @@ services:
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-mock}
       - AWS_REGION=us-east-1
       - SPRING_RABBITMQ_HOST=${BROKER_PRIVATE_IP:-rabbitmq}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-admin}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-admin123}
     ports:
       - "8084:8084"
 
