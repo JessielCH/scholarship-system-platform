@@ -127,14 +127,17 @@ export class AuthService implements OnModuleInit {
     // We use insert but wrap in try-catch to ignore duplicates or handle them.
     // For upserting (if they already exist), we can use queryBuilder.
     try {
-      this.logger.log(`Executing bulk insert...`);
-      await this.userRepository
-        .createQueryBuilder()
-        .insert()
-        .into(User)
-        .values(usersToInsert)
-        .orIgnore() // Ignore on conflict
-        .execute();
+      this.logger.log(`Executing bulk insert in chunks of 1000...`);
+      for (let i = 0; i < usersToInsert.length; i += 1000) {
+        const chunk = usersToInsert.slice(i, i + 1000);
+        await this.userRepository
+          .createQueryBuilder()
+          .insert()
+          .into(User)
+          .values(chunk)
+          .orIgnore() // Ignore on conflict
+          .execute();
+      }
       this.logger.log(`Bulk insert completed.`);
     } catch (e: any) {
       this.logger.error(`Error in bulk insert: ${e.message}`);
