@@ -8,12 +8,12 @@
   --uce-gold: #FFC107;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-uce-blue: var(--uce-blue);
-  --color-uce-red: var(--uce-red);
-  --color-uce-gold: var(--uce-gold);
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --color-uce-blue: #0F2C59;
+  --color-uce-red: #D32F2F;
+  --color-uce-gold: #FFC107;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

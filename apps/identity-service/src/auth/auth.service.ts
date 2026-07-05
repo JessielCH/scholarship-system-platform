@@ -106,8 +106,10 @@ export class AuthService implements OnModuleInit {
     }
 
     const defaultPassword = body.defaultPassword || 'student123';
-    this.logger.log(`Starting bulk register for ${body.users.length} users... generating shared hash.`);
-    
+    this.logger.log(
+      `Starting bulk register for ${body.users.length} users... generating shared hash.`,
+    );
+
     // Use a single hash for all users in the batch to avoid CPU exhaustion
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(defaultPassword, salt);
@@ -117,7 +119,7 @@ export class AuthService implements OnModuleInit {
         id: u.id,
         email: u.email,
         passwordHash: passwordHash,
-        role: u.role || 'STUDENT'
+        role: u.role || 'STUDENT',
       });
     });
 
@@ -139,6 +141,8 @@ export class AuthService implements OnModuleInit {
       throw new BadRequestException('Error during bulk insertion');
     }
 
-    return { message: `Successfully processed ${body.users.length} users for bulk registration` };
+    return {
+      message: `Successfully processed ${body.users.length} users for bulk registration`,
+    };
   }
 }

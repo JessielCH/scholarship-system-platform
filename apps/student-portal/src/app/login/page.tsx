@@ -56,7 +56,7 @@ export default function LoginPage() {
     if (!result.success) {
       const newErrors: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
-        newErrors[issue.path[0]] = issue.message;
+        newErrors[String(issue.path[0])] = issue.message;
       });
       setErrors(newErrors);
       return;

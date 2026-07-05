@@ -30,43 +30,48 @@ export default function StudentDashboard() {
   const { data: scholarship, isLoading, refetch } = useQuery({
     queryKey: ['sagaStatus', user?.sub],
     queryFn: async () => {
-      // Fetch rankings to see if student was awarded a scholarship
-      const rankings = await fetchWithAuth('/v1/queries/academic/rankings');
-      const myRanking = rankings?.find((r: any) => r.StudentID === user?.sub);
-
-      if (!myRanking || !myRanking.Type) {
-        return { status: 'NOT_BENEFICIARY', studentId: user?.sub };
-      }
-
-      let currentStatus = 'WAITING';
-      let rejectionReason = '';
       try {
-        const documents = await fetchWithAuth(`/documents/student/${user?.sub}`);
-        if (documents && documents.length > 0) {
-          // Get most recent document
-          const latestDoc = documents[documents.length - 1];
-          if (latestDoc.status === 'REJECTED') {
-             currentStatus = 'REJECTED';
-             rejectionReason = latestDoc.rejectionReason || 'Documento no válido.';
-          } else if (latestDoc.status === 'APPROVED') {
-             currentStatus = 'APPROVED'; // Or DISBURSED if saga is done, but we use APPROVED for now
-          } else if (latestDoc.status === 'WAITING') {
-             currentStatus = 'VALIDATING_DOC';
-          }
-        }
-      } catch (e) {
-        console.error("Error fetching documents", e);
-      }
+        const rankings = await fetchWithAuth('/v1/queries/academic/rankings') as unknown[];
+        const myRanking = rankings?.find((r: unknown) => (r as Record<string, unknown>).StudentID === user?.sub) as Record<string, unknown>;
 
-      // If they have a scholarship, we simulate the saga status for the UI demo
-      return {
-        status: currentStatus,
-        rejectionReason: rejectionReason,
-        studentId: user?.sub,
-        amount: myRanking.Type === 'EXCELLENCE' ? 800 : 500,
-        type: myRanking.Type,
-        documents: [],
-      };
+        if (!myRanking || !myRanking.Type) {
+          return { status: 'NOT_BENEFICIARY', studentId: user?.sub };
+        }
+
+        let currentStatus = 'WAITING';
+        let rejectionReason = '';
+        try {
+          const documents = await fetchWithAuth(`/documents/student/${user?.sub}`);
+          if (documents && documents.length > 0) {
+            // Get most recent document
+            const latestDoc = documents[documents.length - 1];
+            if (latestDoc.status === 'REJECTED') {
+               currentStatus = 'REJECTED';
+               rejectionReason = latestDoc.rejectionReason || 'Documento no válido.';
+            } else if (latestDoc.status === 'APPROVED') {
+               currentStatus = 'APPROVED'; // Or DISBURSED if saga is done, but we use APPROVED for now
+            } else if (latestDoc.status === 'WAITING') {
+               currentStatus = 'VALIDATING_DOC';
+            }
+          }
+        } catch (e) {
+          console.warn("Document service unavailable, continuing with default status");
+        }
+
+        // If they have a scholarship, we simulate the saga status for the UI demo
+        return {
+          status: currentStatus,
+          rejectionReason: rejectionReason,
+          studentId: user?.sub,
+          amount: myRanking.Type === 'EXCELLENCE' ? 800 : 500,
+          type: myRanking.Type,
+          documents: [],
+        };
+      } catch (e) {
+        console.warn("Backend services unavailable:", (e as Error).message);
+        // Return a safe fallback when services are not running
+        return { status: 'SERVICE_UNAVAILABLE', studentId: user?.sub };
+      }
     },
     enabled: !!user?.sub,
   });
@@ -100,7 +105,26 @@ export default function StudentDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-6 mt-8">
-        {scholarship?.status === 'NOT_BENEFICIARY' ? (
+        {scholarship?.status === 'SERVICE_UNAVAILABLE' ? (
+          <div className="bg-white rounded-xl shadow-sm border border-yellow-200 p-12 text-center animate-in zoom-in-95">
+            <div className="bg-yellow-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Servicios en mantenimiento</h2>
+            <p className="text-gray-600 max-w-md mx-auto mb-4">
+              Los servicios del sistema de becas no están disponibles en este momento. 
+              Por favor, intenta nuevamente en unos minutos.
+            </p>
+            <button 
+              onClick={() => refetch()}
+              className="bg-uce-blue hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold transition"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : scholarship?.status === 'NOT_BENEFICIARY' ? (
           <div className="bg-white rounded-xl shadow-sm border border-red-100 p-12 text-center animate-in zoom-in-95">
             <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
               <LogOut size={32} className="text-red-500" />

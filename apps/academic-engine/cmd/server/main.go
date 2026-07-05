@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
@@ -33,37 +32,24 @@ func main() {
 	// Initialize Repository
 	// For SS-21: Use MemoryRepository (CQRS with in-memory storage)
 	// For SS-22: Use RedisRepository (CQRS with Upstash Redis for read projections)
-	var (
-		cmdRepo   ports.CommandRepository
-		queryRepo ports.QueryRepository
-	)
-
-	useRedis := os.Getenv("USE_REDIS") == "true"
-
-	if useRedis {
-		// Initialize Redis client for Upstash
-		redisConfig := config.NewRedisConfig()
-		redisClient := config.NewRedisClient(redisConfig)
-
-		// Test Redis connection
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		if err := redisClient.Ping(ctx).Err(); err != nil {
-			cancel()
-			log.Fatalf("Failed to connect to Redis: %v", err)
-		}
-		cancel()
-
-		log.Println("✓ Connected to Upstash Redis")
-		redisRepo := repositories.NewRedisRepository(redisClient)
-		cmdRepo = redisRepo
-		queryRepo = redisRepo
-	} else {
-		// Use memory repository (default for development)
-		repo := repositories.NewMemoryRepository()
-		cmdRepo = repo
-		queryRepo = repo
-		log.Println("✓ Using in-memory repository (CQRS with memory storage)")
+	// Initialize Postgres Repository
+	pgConfig := config.NewPostgresConfig()
+	db, err := config.NewPostgresClient(pgConfig)
+	if err != nil {
+		log.Fatalf("Failed to connect to Postgres: %v", err)
 	}
+	defer db.Close()
+
+	log.Println("✓ Connected to PostgreSQL")
+	
+	pgRepo := repositories.NewPostgresRepository(db)
+	if err := pgRepo.EnsureSchema(); err != nil {
+		log.Fatalf("Failed to ensure schema: %v", err)
+	}
+	log.Println("✓ Verified PostgreSQL schemas (academic_records, rankings)")
+
+	var cmdRepo ports.CommandRepository = pgRepo
+	var queryRepo ports.QueryRepository = pgRepo
 
 	// Initialize Message Broker (RabbitMQ)
 	rabbitUrl := os.Getenv("RABBITMQ_URL")
@@ -95,7 +81,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	log.Printf("Academic Engine (CQRS + Redis Projections) starting on http://0.0.0.0%s", addr)
+	log.Printf("Academic Engine (CQRS + Postgres) starting on http://0.0.0.0%s", addr)
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server failed to start: %v", err)
