@@ -1,27 +1,22 @@
 # Academic Engine
 
 ## Overview
-The Academic Engine is a highly performant Go-based microservice that calculates and evaluates a student's academic metrics (GPA, credits, faculty rules) against scholarship requirements.
+The Academic Engine is a high-performance Go-based microservice responsible for calculating and evaluating a student's academic metrics (GPA, credits, faculty rules) against scholarship requirements. It acts as the core rules engine of the Scholarship System Platform.
 
-## Technology Stack
-- **Language**: Go 1.21+
-- **Architecture**: Domain-Driven Design (DDD)
-- **Concurrency**: Goroutines for parallel rule evaluation
-- **Messaging**: Apache Kafka
+## What it does
+- Validates academic history against strict university regulations.
+- Generates dynamic rankings for scholarships based on GPAs and earned credits.
+- Provides extremely fast, concurrent calculations using Goroutines.
+- Integrates with the workflow orchestrator (via Message Broker) to approve or reject academic phases of applications.
 
-## Implementation Details
-- Defines domain models in `internal/domain`.
-- Subscribes to Kafka topics (e.g. `student-academic-update`) to trigger recalculations.
-- Exposes fast gRPC/REST endpoints for synchronous validation.
-- Extensive benchmarking and unit testing in `benchmarks/` and `tests/`.
-
-## Setup & Local Development
-1. **Prerequisites**: Go 1.21+
+## How to use it
+1. **Prerequisites**: Go 1.21+, PostgreSQL, RabbitMQ.
 2. **Fetch Dependencies**:
    ```bash
    go mod download
    ```
 3. **Run locally**:
+   Set required environment variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `RABBITMQ_URL`) and run:
    ```bash
    go run cmd/main.go
    ```
@@ -31,5 +26,46 @@ The Academic Engine is a highly performant Go-based microservice that calculates
    go test -bench=. ./benchmarks/...
    ```
 
-## Build & Deployment
-Compiled into a lightweight native binary (`academic-engine.exe` for local Windows, ELF for Linux). Dockerized using a multi-stage `scratch` or `alpine` image and deployed to the `core` EC2 node.
+## Architecture & Workflow
+
+The Engine uses a CQRS pattern with Domain-Driven Design (DDD).
+
+```mermaid
+sequenceDiagram
+    participant API as API Gateway
+    participant AE as Academic Engine
+    participant DB as PostgreSQL
+    participant MQ as RabbitMQ / Broker
+
+    API->>AE: GET /api/v1/queries/academic/rankings
+    AE->>DB: Query Read Model (Rankings)
+    DB-->>AE: Rankings Data
+    AE-->>API: JSON Response
+
+    MQ->>AE: Event: student.academic.update
+    AE->>DB: Process rules & update Write Model
+    DB-->>AE: OK
+    AE->>MQ: Event: academic.evaluation.completed
+```
+
+## Database Schema
+
+```mermaid
+erDiagram
+    ACADEMIC_RECORD {
+        uuid id PK
+        string student_id
+        float gpa
+        int total_credits
+        string faculty
+        timestamp last_updated
+    }
+    RANKING {
+        uuid id PK
+        string student_id
+        float score
+        int position
+        timestamp calculated_at
+    }
+    ACADEMIC_RECORD ||--o{ RANKING : "generates"
+```

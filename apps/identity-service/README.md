@@ -1,36 +1,65 @@
 # Identity Service
 
 ## Overview
-The Identity Service handles authentication, authorization, and user profile management for the Scholarship System Platform. It acts as the central authority for user identity verification.
+The Identity Service is a NestJS-based microservice that manages student authentication, authorization, and core profile data. It acts as the identity provider for the entire Scholarship System Platform.
 
-## Technology Stack
-- **Framework**: NestJS (TypeScript)
-- **Database**: PostgreSQL (via TypeORM)
-- **Caching**: Redis
-- **Messaging**: RabbitMQ (`amqplib`) / Apache Kafka
-- **Authentication**: JWT, bcryptjs
+## What it does
+- **Authentication**: Issues securely signed JSON Web Tokens (JWT) using RS256 (asymmetric keys).
+- **Authorization**: Manages user roles (e.g., `STUDENT`, `ADMIN`) to restrict access.
+- **Profile Management**: Handles student biographical data and credentials.
+- **Bulk Ingestion**: Provides high-throughput endpoints for creating thousands of student records simultaneously from Excel/CSV uploads.
 
-## Implementation Details
-- Issues JWT tokens for session management.
-- Validates credentials against a PostgreSQL database.
-- Publishes user lifecycle events (e.g., `UserCreated`) to RabbitMQ/Kafka for downstream services to consume asynchronously.
-- Utilizes Redis for fast session retrieval and token blacklisting.
-
-## Setup & Local Development
-1. **Install dependencies**:
+## How to use it
+1. **Prerequisites**: Node.js 20+, PostgreSQL.
+2. **Install Dependencies**:
    ```bash
    npm install
    ```
-2. **Environment Variables**:
-   Copy `.env.example` to `.env` and set `DB_HOST`, `REDIS_HOST`, and `RABBITMQ_URL`.
-3. **Run locally**:
+3. **Configuration**:
+   Requires `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`, `JWT_PRIVATE_KEY`, and `JWT_PUBLIC_KEY`.
+4. **Run locally**:
    ```bash
    npm run start:dev
    ```
-4. **Run Tests**:
+5. **Run tests**:
    ```bash
    npm run test
    ```
 
-## Build & Deployment
-Dockerized and deployed as a core microservice into the `security` or `core` EC2 nodes. Requires active connections to the dedicated `database` node (Postgres/Redis) and `broker` node (RabbitMQ).
+## Architecture & Workflow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant IS as Identity Service
+    participant DB as PostgreSQL
+
+    Client->>IS: POST /api/auth/login (email, password)
+    IS->>DB: Fetch user by email
+    DB-->>IS: User Record (Hashed Password)
+    IS->>IS: Verify bcrypt hash
+    IS->>IS: Generate RS256 JWT
+    IS-->>Client: 200 OK (JWT Token)
+```
+
+## Database Schema
+
+```mermaid
+erDiagram
+    USERS {
+        uuid id PK
+        string email
+        string password_hash
+        string role "STUDENT, ADMIN"
+        timestamp created_at
+    }
+    STUDENT_PROFILES {
+        uuid id PK
+        uuid user_id FK
+        string identification
+        string full_name
+        string phone
+        string address
+    }
+    USERS ||--o| STUDENT_PROFILES : "has profile"
+```
