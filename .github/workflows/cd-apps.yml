@@ -139,7 +139,8 @@ jobs:
                 echo "WARNING: Node $IP is unreachable. Skipping."
                 continue
               fi
-              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker)"
+              sudo ssh ubuntu@$IP "sudo usermod -aG docker ubuntu"
             done
             
             # Database Node
@@ -341,7 +342,8 @@ jobs:
                 echo "WARNING: Node $IP is unreachable. Skipping."
                 continue
               fi
-              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker)"
+              sudo ssh ubuntu@$IP "sudo usermod -aG docker ubuntu"
             done
             
             # Database Node
@@ -533,7 +535,8 @@ jobs:
                 echo "WARNING: Node $IP is unreachable. Skipping."
                 continue
               fi
-              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker && sudo usermod -aG docker ubuntu)"
+              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker)"
+              sudo ssh ubuntu@$IP "sudo usermod -aG docker ubuntu"
             done
             
             # Database Node
