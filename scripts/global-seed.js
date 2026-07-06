@@ -149,12 +149,14 @@ async function seed() {
     const userCountRes = await pgClient.query("SELECT COUNT(*) FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
     const userCount = parseInt(userCountRes.rows[0].count, 10);
     
+    let shouldSeed = true;
     if (userCount > 9000) {
-      console.log(`Database already has ${userCount} synthetic students. Skipping seed.`);
-      process.exit(0);
+      console.log(`Database already has ${userCount} synthetic students. Skipping seed insertion, but will trigger processing...`);
+      shouldSeed = false;
     }
 
-    console.log('Clearing old synthetic students from Postgres...');
+    if (shouldSeed) {
+      console.log('Clearing old synthetic students from Postgres...');
     await academicClient.query("DELETE FROM academic_records WHERE student_id LIKE 'student_%'");
     await pgClient.query("DELETE FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
     
@@ -218,6 +220,7 @@ async function seed() {
     }
 
     console.log('Database seeded successfully!');
+    } // end if (shouldSeed)
 
     // Get an admin token to trigger the process endpoint
     // Retry logic for login since identity-service might be restarting after DB creation
