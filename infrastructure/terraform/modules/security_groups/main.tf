@@ -131,7 +131,7 @@ resource "aws_security_group" "compute" {
     from_port       = 0
     to_port         = 65535
     protocol        = "tcp"
-    security_groups = [aws_security_group.core.id]
+    security_groups = [aws_security_group.core.id, aws_security_group.edge.id]
   }
 
   egress {
