@@ -133,10 +133,17 @@ async function seed() {
         );
       `);
 
-    // Generate one hash to reuse for all synthetic students to save massive CPU time
-    console.log('Generating shared bcrypt hash for "student123"...');
-    const salt = await bcrypt.genSalt(10);
-    const sharedHash = await bcrypt.hash('student123', salt);
+      console.log('Generating shared bcrypt hash for passwords...');
+      const salt = await bcrypt.genSalt(10);
+      const sharedHash = await bcrypt.hash('student123', salt);
+      const adminHash = await bcrypt.hash('admin123', salt);
+
+      console.log('Seeding admin user if not exists...');
+      const adminExists = await pgClient.query(`SELECT 1 FROM "user" WHERE email = 'admin@uce.edu.ec'`);
+      if (adminExists.rowCount === 0) {
+        await pgClient.query(`INSERT INTO "user" (id, email, "passwordHash", role) VALUES ('admin_default_0', 'admin@uce.edu.ec', '${adminHash}', 'ADMIN')`);
+        console.log('Admin user seeded successfully.');
+      }
 
     console.log('Checking if database is already seeded...');
     const userCountRes = await pgClient.query("SELECT COUNT(*) FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
@@ -213,12 +220,21 @@ async function seed() {
     console.log('Database seeded successfully!');
 
     // Get an admin token to trigger the process endpoint
+    // Retry logic for login since identity-service might be restarting after DB creation
     console.log('Authenticating as admin to trigger processing...');
-    const loginRes = await fetch(`${API_GATEWAY}/api/auth/login`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({email: 'admin@uce.edu.ec', password: 'admin123'})
-    });
+    let loginRes;
+    let retries = 5;
+    while (retries > 0) {
+      loginRes = await fetch(`${API_GATEWAY}/api/auth/login`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: 'admin@uce.edu.ec', password: 'admin123'})
+      });
+      if (loginRes.ok) break;
+      console.log(`Failed to authenticate (Status: ${loginRes.status}). Retrying in 5 seconds... (${retries} left)`);
+      await new Promise(res => setTimeout(res, 5000));
+      retries--;
+    }
     
     if (!loginRes.ok) {
       console.log('Failed to authenticate as admin. Status:', loginRes.status);
