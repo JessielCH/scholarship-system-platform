@@ -43,7 +43,7 @@ services:
     environment:
       - REDIS_HOST=${DATABASE_PRIVATE_IP:-redis}
       - REDIS_PORT=6379
-      - KAFKA_BROKERS=${BROKER_PRIVATE_IP:-kafka-1}:29092
+      - KAFKA_BROKERS=${BROKER_PRIVATE_IP:-kafka-1}:9092
       - SERVER_PORT=8083
     ports:
       - "8083:8083"
