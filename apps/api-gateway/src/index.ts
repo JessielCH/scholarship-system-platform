@@ -71,7 +71,7 @@ fastify.get('/health', async () => {
 
 fastify.addHook('preHandler', async (request, reply) => {
   // Public routes mapping (e.g. Identity Service login/register)
-  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth')) {
+  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth') || request.method === 'OPTIONS') {
     return;
   }
 
