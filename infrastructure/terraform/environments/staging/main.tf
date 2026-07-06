@@ -63,7 +63,7 @@ module "asg_edge" {
   source              = "../../modules/asg"
   environment         = "staging"
   ami_id              = data.aws_ami.ubuntu.id
-  instance_type       = "t3.micro"
+  instance_type       = "t3.medium"
   user_data           = local.docker_install_script
   subnet_ids          = module.vpc.private_subnet_ids
   security_group_ids  = [module.security_groups.edge_sg_id]
@@ -75,35 +75,6 @@ module "asg_edge" {
   key_name            = "vockey"
 }
 
-module "ec2_core" {
-  source             = "../../modules/ec2"
-  environment        = "staging"
-  service_name       = "core"
-  subnet_id          = module.vpc.private_subnet_ids[0]
-  security_group_ids = [module.security_groups.core_sg_id]
-  instance_type      = "t3.small"
-  user_data          = local.docker_install_script
-}
-
-module "ec2_security" {
-  source             = "../../modules/ec2"
-  environment        = "staging"
-  service_name       = "security"
-  subnet_id          = module.vpc.private_subnet_ids[0]
-  security_group_ids = [module.security_groups.security_sg_id]
-  instance_type      = "t3.micro"
-  user_data          = local.docker_install_script
-}
-
-module "ec2_compute" {
-  source             = "../../modules/ec2"
-  environment        = "staging"
-  service_name       = "compute"
-  subnet_id          = module.vpc.private_subnet_ids[0]
-  security_group_ids = [module.security_groups.compute_sg_id]
-  instance_type      = "t3.micro"
-  user_data          = local.docker_install_script
-}
 
 module "ec2_database" {
   source             = "../../modules/ec2"
