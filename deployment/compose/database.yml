@@ -2,7 +2,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: scholarship_postgres
+    container_name: scholarship-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: scholarship_redis
+    container_name: scholarship-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -33,7 +33,7 @@ services:
 
   mongodb:
     image: mongo:6.0
-    container_name: scholarship_mongodb
+    container_name: scholarship-mongodb
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
@@ -50,7 +50,7 @@ services:
 
   mariadb:
     image: mariadb:10.11
-    container_name: scholarship_mariadb
+    container_name: scholarship-mariadb
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
