@@ -11,6 +11,14 @@ resource "aws_security_group" "edge" {
   }
 
   ingress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+    description     = "Allow testing traffic from Bastion"
+  }
+
+  ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -60,6 +68,14 @@ resource "aws_security_group" "core" {
     from_port       = 0
     to_port         = 65535
     protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+    description     = "Allow testing traffic from Bastion"
+  }
+
+  ingress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
     security_groups = [aws_security_group.edge.id]
   }
 
@@ -99,6 +115,14 @@ resource "aws_security_group" "security" {
     from_port       = 0
     to_port         = 65535
     protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+    description     = "Allow testing traffic from Bastion"
+  }
+
+  ingress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
     security_groups = [aws_security_group.core.id, aws_security_group.edge.id]
   }
 
@@ -131,6 +155,14 @@ resource "aws_security_group" "compute" {
     from_port       = 0
     to_port         = 65535
     protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+    description     = "Allow testing traffic from Bastion"
+  }
+
+  ingress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
     security_groups = [aws_security_group.core.id, aws_security_group.edge.id]
   }
 
@@ -157,6 +189,14 @@ resource "aws_security_group" "database" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+    description     = "Allow testing traffic from Bastion"
   }
 
   ingress {
@@ -210,6 +250,14 @@ resource "aws_security_group" "broker" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+    description     = "Allow testing traffic from Bastion"
   }
 
   ingress {
