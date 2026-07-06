@@ -9,7 +9,7 @@ import (
 
 func TestCommandService_CalculateRankings(t *testing.T) {
 	repo := repositories.NewMemoryRepository()
-	service := NewCommandService(repo, repo)
+	service := NewCommandService(repo, repo, nil)
 
 	records := []domain.AcademicRecord{
 		{ID: "1", StudentID: "S1", Faculty: "Artes", Career: "Artes", Semester: 4, GPA: 19.5, VulnerabilityScore: 10.0},
@@ -52,7 +52,7 @@ func TestCommandService_CalculateRankings(t *testing.T) {
 
 func TestCommandService_SeedDatabase(t *testing.T) {
 	repo := repositories.NewMemoryRepository()
-	service := NewCommandService(repo, repo)
+	service := NewCommandService(repo, repo, nil)
 
 	err := service.SeedDatabase(100)
 	if err != nil {

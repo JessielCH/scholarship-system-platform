@@ -5,6 +5,7 @@ import "github.com/JessielCH/scholarship-system-platform/apps/academic-engine/in
 // CommandRepository defines how we store/write academic records and rankings.
 type CommandRepository interface {
 	SaveRecord(record domain.AcademicRecord) error
+	BulkSaveRecords(records []domain.AcademicRecord) error
 	SaveRanking(ranking domain.RankingScore) error
 }
 

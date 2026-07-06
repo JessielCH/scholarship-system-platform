@@ -1,22 +1,43 @@
-# API Gateway Service
+# API Gateway
 
 ## Overview
-The API Gateway acts as the central ingress point for the Scholarship System Platform. It provides strict security controls, traffic shaping, and intelligent request routing to internal microservices.
+The API Gateway acts as the single entry point for the Scholarship System Platform. It routes client requests (from the Student Portal and Admin Dashboard) to the appropriate internal microservices, handling cross-cutting concerns like authentication, rate limiting, and caching.
 
-## Key Responsibilities
-* **Rate Limiting**: Enforces IP-based request quotas via Redis to mitigate Denial of Service (DoS) attacks and abuse.
-* **Authentication Verification**: Validates asymmetric JWT tokens (RS256) at the edge before routing requests to protected upstream services.
-* **Request Routing**: Proxies HTTP requests to internal microservices (e.g., Identity Service, Academic Engine) based on defined path mappings.
-* **CORS Management**: Enforces strict Cross-Origin Resource Sharing policies to prevent unauthorized web client access.
+## What it does
+- **Routing**: Proxies traffic to Identity, Academic, Document, Socioeconomic, and Payment services.
+- **Security**: Validates JWT tokens using public keys before forwarding requests to protected endpoints.
+- **Performance**: Uses Redis to cache frequent read queries (e.g., rankings, public announcements).
+- **Load Balancing**: Distributes load across internal service instances.
 
-## Technology Stack
-* **Runtime**: Node.js
-* **Framework**: Fastify
-* **Cache/Storage**: Redis (ioredis)
+## How to use it
+1. **Prerequisites**: Node.js 20+, Redis.
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+3. **Configuration**: Set environment variables for downstream services (`IDENTITY_SERVICE_URL`, `ACADEMIC_SERVICE_URL`, etc.).
+4. **Run locally**:
+   ```bash
+   npm run start:dev
+   ```
 
-## Configuration
-The service relies on the following essential environment variables:
-* `PORT`: The port on which the gateway listens (default: 3000).
-* `REDIS_URL`: The connection string for the rate-limiting Redis instance.
-* `JWT_PUBLIC_KEY`: The RS256 public key utilized for token signature verification.
-* `IDENTITY_SERVICE_URL`: The internal network address of the Identity Service.
+## Architecture & Workflow
+
+```mermaid
+flowchart TD
+    Client[Client App / Browser] -->|HTTP Requests| Gateway(API Gateway)
+    Gateway -->|Auth Check| JWT{Valid JWT?}
+    JWT -- No --> Error[401 Unauthorized]
+    JWT -- Yes --> Redis{Cache Hit?}
+    Redis -- Yes --> CacheResponse[Return Cached Data]
+    Redis -- No --> Router{Route to Service}
+    
+    Router -->|/api/auth/*| Identity[Identity Service]
+    Router -->|/api/academic/*| Academic[Academic Engine]
+    Router -->|/api/documents/*| Document[Document Service]
+    Router -->|/api/socioeconomic/*| Socio[Socioeconomic Validator]
+    Router -->|/api/payments/*| Payment[Payment Service]
+```
+
+## Database
+The API Gateway does not use a persistent relational database. It relies on **Redis** for ephemeral caching and rate limiting.

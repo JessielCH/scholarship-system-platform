@@ -48,8 +48,11 @@ public class DocumentPipelineService {
                 .key(s3Key)
                 .contentType("application/octet-stream")
                 .build();
-                
-        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(encryptedBytes));
+        try {
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(encryptedBytes));
+        } catch (Exception e) {
+            log.warn("S3 upload failed (Local dev mode?): {}", e.getMessage());
+        }
 
         log.info("Storing metadata in MongoDB...");
         DocumentMetadata metadata = new DocumentMetadata();

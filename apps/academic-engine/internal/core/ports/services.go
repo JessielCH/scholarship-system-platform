@@ -7,6 +7,7 @@ type CommandService interface {
 	ProcessAll() error
 	CalculateRankings(records []domain.AcademicRecord) ([]domain.RankingScore, error)
 	SeedDatabase(count int) error
+	BulkInsertRecords(records []domain.AcademicRecord) error
 }
 
 // QueryService defines the business logic for querying state.

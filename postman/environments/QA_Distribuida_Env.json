@@ -1,0 +1,61 @@
+{
+  "id": "e38520ec-9a1b-4b13-8a9d-5a8b7c4d3e2f",
+  "name": "QA Distribuida Env",
+  "values": [
+    {
+      "key": "edge_public_ip",
+      "value": "35.172.67.236",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "edge_private_ip",
+      "value": "10.2.1.146",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "security_ip",
+      "value": "10.2.11.87",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "core_ip",
+      "value": "10.2.11.250",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "compute_ip",
+      "value": "10.2.11.119",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "broker_ip",
+      "value": "10.2.11.165",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "db_ip",
+      "value": "10.2.11.111",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "bucket_name",
+      "value": "uce-distribuida-qa-documents-845247406892",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "gateway_url",
+      "value": "http://35.172.67.236:3000",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}
