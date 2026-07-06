@@ -63,7 +63,7 @@ module "asg_edge" {
   source              = "../../modules/asg"
   environment         = "staging"
   ami_id              = data.aws_ami.ubuntu.id
-  instance_type       = "t3.small"
+  instance_type       = "t3.micro"
   user_data           = local.docker_install_script
   subnet_ids          = module.vpc.private_subnet_ids
   security_group_ids  = [module.security_groups.edge_sg_id]
@@ -91,7 +91,7 @@ module "ec2_security" {
   service_name       = "security"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.security_sg_id]
-  instance_type      = "t3.small"
+  instance_type      = "t3.micro"
   user_data          = local.docker_install_script
 }
 
@@ -101,7 +101,7 @@ module "ec2_compute" {
   service_name       = "compute"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.compute_sg_id]
-  instance_type      = "t3.small"
+  instance_type      = "t3.micro"
   user_data          = local.docker_install_script
 }
 
