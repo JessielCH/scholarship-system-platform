@@ -71,6 +71,7 @@ jobs:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
           envs: DB_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,DATABASE_PRIVATE_IP,BROKER_PRIVATE_IP,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
           script: |
             # Setup SSH key for ubuntu user
@@ -213,6 +214,7 @@ jobs:
           host: ${{ env.BASTION_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
           source: "deployment/compose/,scripts/"
           target: "~/"
           
@@ -238,6 +240,7 @@ jobs:
           host: ${{ env.BASTION_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
           envs: DB_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,DATABASE_PRIVATE_IP,BROKER_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
           script: |
             # Setup SSH key for ubuntu user
@@ -330,8 +333,6 @@ jobs:
 
             echo "Waiting for services to be ready before seeding..."
             sleep 15
-            echo "Running Global Seeder inside Node container on Core node..."
-            sudo scp -o StrictHostKeyChecking=no -r ~/scripts ubuntu@$CORE_PRIVATE_IP:~/scripts
             sudo ssh -o StrictHostKeyChecking=no ubuntu@$DATABASE_PRIVATE_IP "sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts -e DB_HOST=$DATABASE_PRIVATE_IP -e REDIS_HOST=$DATABASE_PRIVATE_IP -e DB_USER=postgres -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=identitydb -e API_GATEWAY=http://$ALB_DNS_NAME:3000 node:20-alpine sh -c \"cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js\""
 
   deploy-prod:
@@ -413,6 +414,7 @@ jobs:
           host: ${{ env.BASTION_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
           envs: DB_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,DATABASE_PRIVATE_IP,BROKER_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
           script: |
             # Setup SSH key for ubuntu user
@@ -502,8 +504,6 @@ jobs:
 
             echo "Waiting for services to be ready before seeding..."
             sleep 15
-            echo "Running Global Seeder inside Node container on Core node..."
-            sudo scp -o StrictHostKeyChecking=no -r ~/scripts ubuntu@$CORE_PRIVATE_IP:~/scripts
             sudo ssh -o StrictHostKeyChecking=no ubuntu@$DATABASE_PRIVATE_IP "sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts -e DB_HOST=$DATABASE_PRIVATE_IP -e REDIS_HOST=$DATABASE_PRIVATE_IP -e DB_USER=postgres -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=identitydb -e API_GATEWAY=http://$ALB_DNS_NAME:3000 node:20-alpine sh -c \"cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js\""
 
   load-test:
