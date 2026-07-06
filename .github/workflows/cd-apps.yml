@@ -216,6 +216,8 @@ jobs:
           echo "CORE_PRIVATE_IP=$(terraform output -raw core_private_ip)" >> $GITHUB_ENV
           echo "SECURITY_PRIVATE_IP=$(terraform output -raw security_private_ip)" >> $GITHUB_ENV
           echo "DATABASE_PRIVATE_IP=$(terraform output -raw database_private_ip)" >> $GITHUB_ENV
+          echo "BROKER_PRIVATE_IP=$(terraform output -raw broker_private_ip)" >> $GITHUB_ENV
+          echo "COMPUTE_PRIVATE_IP=$(terraform output -raw compute_private_ip)" >> $GITHUB_ENV
           echo "BASTION_PUBLIC_IP=$(terraform output -raw bastion_public_ip)" >> $GITHUB_ENV
           echo "ASG_NAME=$(terraform output -raw asg_name)" >> $GITHUB_ENV
           echo "ALB_DNS_NAME=$(terraform output -raw alb_dns_name)" >> $GITHUB_ENV
@@ -251,6 +253,8 @@ jobs:
           CORE_PRIVATE_IP: ${{ env.CORE_PRIVATE_IP }}
           SECURITY_PRIVATE_IP: ${{ env.SECURITY_PRIVATE_IP }}
           DATABASE_PRIVATE_IP: ${{ env.DATABASE_PRIVATE_IP }}
+          BROKER_PRIVATE_IP: ${{ env.BROKER_PRIVATE_IP }}
+          COMPUTE_PRIVATE_IP: ${{ env.COMPUTE_PRIVATE_IP }}
           EDGE_PRIVATE_IPS: ${{ env.EDGE_PRIVATE_IPS }}
           ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
           MONGO_URI: ${{ secrets.MONGO_URI }}
@@ -264,7 +268,7 @@ jobs:
           host: ${{ env.BASTION_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
+          envs: JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,CORE_PRIVATE_IP,SECURITY_PRIVATE_IP,DATABASE_PRIVATE_IP,BROKER_PRIVATE_IP,COMPUTE_PRIVATE_IP,EDGE_PRIVATE_IPS,ALB_DNS_NAME,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
           script: |
             # Setup SSH key for ubuntu user
             mkdir -p ~/.ssh
@@ -275,6 +279,8 @@ jobs:
             ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $SECURITY_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             ssh-keyscan -H $CORE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -H $BROKER_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -H $COMPUTE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
             for IP in $EDGE_PRIVATE_IPS; do
               ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null
             done
@@ -288,6 +294,8 @@ jobs:
             sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $SECURITY_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             sudo ssh-keyscan -H $CORE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            sudo ssh-keyscan -H $BROKER_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            sudo ssh-keyscan -H $COMPUTE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             for IP in $EDGE_PRIVATE_IPS; do
               sudo ssh-keyscan -H $IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
             done
@@ -324,8 +332,8 @@ jobs:
             sudo chmod +x /usr/local/bin/docker-compose
             sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             
-            # Ensure Docker is installed on private nodes
-            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
+            # Ensure Docker is installed on ALL private nodes (including Broker and Compute)
+            for IP in $DATABASE_PRIVATE_IP $SECURITY_PRIVATE_IP $CORE_PRIVATE_IP $BROKER_PRIVATE_IP $COMPUTE_PRIVATE_IP $EDGE_PRIVATE_IPS; do
               echo "Checking connection to $IP..."
               if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
                 echo "WARNING: Node $IP is unreachable. Skipping."
@@ -338,7 +346,11 @@ jobs:
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml up -d
             
-            # Core Node
+            # Broker Node (Kafka + Zookeeper + RabbitMQ)
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$BROKER_PRIVATE_IP -f deployment/compose/broker.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$BROKER_PRIVATE_IP -f deployment/compose/broker.yml up -d
+            
+            # Core Node (Academic + Document + Saga)
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml up -d
             
@@ -348,7 +360,11 @@ jobs:
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
             
-            # Edge Nodes (ASG)
+            # Compute Node (Payment + Socioeconomic)
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$COMPUTE_PRIVATE_IP -f deployment/compose/compute.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$COMPUTE_PRIVATE_IP -f deployment/compose/compute.yml up -d
+            
+            # Edge Nodes (ASG - API Gateway + Student Portal)
             for IP in $EDGE_PRIVATE_IPS; do
               echo "Checking connection to Edge $IP..."
               if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
