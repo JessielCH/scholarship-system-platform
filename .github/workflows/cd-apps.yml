@@ -224,7 +224,6 @@ jobs:
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           DATABASE_PRIVATE_IP: ${{ env.DATABASE_PRIVATE_IP }}
           BROKER_PRIVATE_IP: ${{ env.BROKER_PRIVATE_IP }}
-          BROKER_PRIVATE_IP: ${{ env.BROKER_PRIVATE_IP }}
           EDGE_PRIVATE_IPS: ${{ env.EDGE_PRIVATE_IPS }}
           ALB_DNS_NAME: ${{ env.ALB_DNS_NAME }}
           MONGO_URI: ${{ secrets.MONGO_URI }}
