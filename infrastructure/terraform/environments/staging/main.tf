@@ -121,7 +121,7 @@ module "ec2_broker" {
   service_name       = "broker"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.broker_sg_id]
-  instance_type      = "t3.small"
+  instance_type      = "t3.micro"
   user_data          = local.docker_install_script
 }
 
