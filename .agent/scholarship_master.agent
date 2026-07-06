@@ -32,3 +32,25 @@ You are the ONLY agent in charge of developing the Central University of Ecuador
 - **Microfrontends:** Backend development must be accompanied by its frontend/microfrontend integration (React/Next/Vite) using the requested premium design.
 - **PR Blocking:** You are forbidden from creating or suggesting a PR merge if the Dockerfile or Tests are missing, or if it breaks the assigned polyglot persistence.
 - **Token Economy:** Be direct. Do not print the entire source code if you only changed one line. Use code replacement tools precisely.
+
+# 🧠 AGENT MEMORY (KNOWN ERRORS & FIXES)
+*This section stores previous mistakes and successful tests to avoid repeating them and save memory.*
+
+**1. CORS & OPTIONS Preflight (API Gateway)**
+- **Error:** `401 Unauthorized` during CORS preflight in Gateway.
+- **Cause:** The Gateway was enforcing JWT validation on `OPTIONS` requests, causing browsers to block the request.
+- **Fix:** Always add `if (request.method === 'OPTIONS') return;` at the beginning of the `preHandler` authorization hook in Fastify/Express.
+
+**2. GET Requests with Content-Type (Fastify 400 Bad Request)**
+- **Error:** `400 Bad Request` repeatedly on `GET /api/documents/all` and other GET endpoints.
+- **Cause:** Frontend `fetchWithAuth` was attaching `Content-Type: application/json` to `GET` requests. Fastify attempts to parse the body if `Content-Type` is set, and throws 400 if the body is empty.
+- **Fix:** Only attach `Content-Type: application/json` if `method !== 'GET'`.
+
+**3. Node.js Script Hanging (PostgreSQL)**
+- **Error:** `global-seed.js` script finishes its job but never exits, hanging GitHub Actions.
+- **Cause:** Unclosed database connections (e.g., `academicClient`) declared inside a `try` block and inaccessible in the `finally` block for cleanup.
+- **Fix:** Always declare database clients (`let academicClient;`) outside the `try` block so they can be reliably disconnected (`client.end()`) in the `finally` block.
+
+**4. Successful Tests (Evidences)**
+- **Documents Upload:** Use `multipart/form-data` with `fetch` without overriding `Content-Type`.
+- **Global Seeder:** Successfully injects 10,000 records using bulk inserts (`INSERT INTO ... VALUES (...)`) to avoid performance bottlenecks.
