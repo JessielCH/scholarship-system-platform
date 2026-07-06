@@ -53,4 +53,12 @@ You are the ONLY agent in charge of developing the Central University of Ecuador
 
 **4. Successful Tests (Evidences)**
 - **Documents Upload:** Use `multipart/form-data` with `fetch` without overriding `Content-Type`.
-- **Global Seeder:** Successfully injects 10,000 records using bulk inserts (`INSERT INTO ... VALUES (...)`) to avoid performance bottlenecks.
+**5. Spring Boot (Tomcat) 400 Bad Request on Proxied Requests**
+- **Error:** `400 Bad Request` or `IllegalArgumentException: The character [_] is never valid in a domain name` in Spring Boot microservices.
+- **Cause:** When API Gateway (`fastify-http-proxy`) proxies a request, it forwards the internal Docker container name as the `Host` header. If the container name contains underscores (e.g., `scholarship_document_service`), Tomcat rejects the HTTP request entirely according to RFC 3986 because underscores are invalid in hostnames.
+- **Fix:** ALWAYS use hyphens (`-`) instead of underscores (`_`) for docker-compose `container_name` and internal URLs that are routed via HTTP (e.g., `scholarship-document-service`).
+
+**6. FormData overriding Content-Type**
+- **Error:** File uploads (`MultipartFile` in Spring) returning `400 Bad Request` saying the file parameter is missing.
+- **Cause:** Setting `Content-Type: application/json` on `POST` requests in `fetchWithAuth` overrides the browser's automatic `multipart/form-data; boundary=...` required for `FormData`.
+- **Fix:** Ensure the frontend `fetchWithAuth` wrapper DOES NOT set `Content-Type` if `body instanceof FormData`.
