@@ -56,6 +56,7 @@ async function seed() {
   });
 
   let pgClient;
+  let academicClient;
   try {
     await initClient.connect();
     console.log(`Checking if database "${DB_NAME}" exists...`);
@@ -100,7 +101,7 @@ async function seed() {
     await pgClient.connect();
     console.log(`Connected to PostgreSQL (${DB_NAME})`);
 
-    const academicClient = new Client({
+    academicClient = new Client({
       host: DB_HOST,
       user: DB_USER,
       password: DB_PASSWORD,
