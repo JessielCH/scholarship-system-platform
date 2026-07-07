@@ -225,9 +225,7 @@ export default function StudentDashboard() {
                     descárgalo, fírmalo y vuelve a subirlo aquí.
                   </p>
                   <div className="flex gap-4 mt-4">
-                    <button className="bg-white border border-uce-blue text-uce-blue hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm">
-                      Descargar Contrato (PDF)
-                    </button>
+
                     <button 
                       onClick={() => setShowContractModal(true)}
                       className="bg-uce-blue hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm"
