@@ -2,7 +2,7 @@ version: '3.8'
 services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: scholarship_rabbitmq
+    container_name: scholarship-rabbitmq
     restart: unless-stopped
     ports:
       - "5672:5672"
@@ -20,7 +20,7 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
-    container_name: scholarship_zookeeper
+    container_name: scholarship-zookeeper
     restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -36,7 +36,7 @@ services:
 
   kafka-1:
     image: confluentinc/cp-kafka:7.4.0
-    container_name: scholarship_kafka_1
+    container_name: scholarship-kafka_1
     restart: unless-stopped
     depends_on:
       - zookeeper
@@ -53,7 +53,7 @@ services:
 
   kafka-2:
     image: confluentinc/cp-kafka:7.4.0
-    container_name: scholarship_kafka_2
+    container_name: scholarship-kafka_2
     restart: unless-stopped
     depends_on:
       - zookeeper
@@ -70,7 +70,7 @@ services:
 
   kafka-3:
     image: confluentinc/cp-kafka:7.4.0
-    container_name: scholarship_kafka_3
+    container_name: scholarship-kafka_3
     restart: unless-stopped
     depends_on:
       - zookeeper
