@@ -8,7 +8,8 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     headers.set('Authorization', `Bearer ${token}`);
   }
   
-  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+  const method = (options.method || 'GET').toUpperCase();
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData) && method !== 'GET') {
     headers.set('Content-Type', 'application/json');
   }
 
