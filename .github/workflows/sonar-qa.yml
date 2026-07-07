@@ -3,10 +3,10 @@ name: SonarQube QA Analysis
 on:
   push:
     branches:
-      - qa
+      - QA
   pull_request:
     branches:
-      - qa
+      - QA
 
 jobs:
   sonarqube:
