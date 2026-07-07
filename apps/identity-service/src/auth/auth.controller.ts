@@ -25,13 +25,12 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'Register new user' })
+  @ApiOperation({ summary: 'Register new student user' })
   @ApiBody({
     schema: {
       example: {
         email: 'student@uce.edu.ec',
         password: 'password123',
-        role: 'STUDENT',
       },
     },
   })
@@ -39,6 +38,22 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Email in use or missing fields' })
   async register(@Body() body: any) {
     return this.authService.register(body);
+  }
+
+  @Post('register-admin')
+  @ApiOperation({ summary: 'Register new admin user' })
+  @ApiBody({
+    schema: {
+      example: {
+        email: 'admin_new@uce.edu.ec',
+        password: 'password123',
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Admin registered' })
+  @ApiResponse({ status: 400, description: 'Email in use or missing fields' })
+  async registerAdmin(@Body() body: any) {
+    return this.authService.registerAdmin(body);
   }
 
   @Post('bulk-register')
