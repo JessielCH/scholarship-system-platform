@@ -15,7 +15,7 @@ const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const API_GATEWAY = process.env.API_GATEWAY || 'http://localhost:3000';
 
 const BATCH_SIZE = 1000;
-const TOTAL_RECORDS = 50000;
+const TOTAL_RECORDS = 10000;
 
 const uceFaculties = [
 	"Ingenieria y Ciencias Aplicadas",
@@ -46,7 +46,8 @@ async function seed() {
     user: DB_USER,
     password: DB_PASSWORD,
     database: 'postgres',
-    port: DB_PORT
+    port: DB_PORT,
+    connectionTimeoutMillis: 5000
   });
 
   const redisClient = new Redis({
@@ -55,6 +56,7 @@ async function seed() {
   });
 
   let pgClient;
+  let academicClient;
   try {
     await initClient.connect();
     console.log(`Checking if database "${DB_NAME}" exists...`);
@@ -75,6 +77,16 @@ async function seed() {
     } else {
       console.log(`Database "socioeconomic_db" already exists.`);
     }
+
+    const res3 = await initClient.query(`SELECT 1 FROM pg_database WHERE datname = 'academicdb'`);
+    if (res3.rowCount === 0) {
+      console.log(`Database "academicdb" does not exist. Creating it automatically...`);
+      await initClient.query(`CREATE DATABASE "academicdb"`);
+      console.log(`Database "academicdb" created successfully.`);
+    } else {
+      console.log(`Database "academicdb" already exists.`);
+    }
+
     await initClient.end();
 
     pgClient = new Client({
@@ -82,20 +94,26 @@ async function seed() {
       user: DB_USER,
       password: DB_PASSWORD,
       database: DB_NAME,
-      port: DB_PORT
+      port: DB_PORT,
+      connectionTimeoutMillis: 5000
     });
 
     await pgClient.connect();
     console.log(`Connected to PostgreSQL (${DB_NAME})`);
 
-    try {
-      const countRes = await pgClient.query('SELECT COUNT(*) FROM "user"');
-      if (parseInt(countRes.rows[0].count) >= TOTAL_RECORDS) {
-          console.log(`Already found ${countRes.rows[0].count} records. Skipping seed.`);
-          return;
-      }
-    } catch (e) {
-      console.log('User table might not exist yet, creating it...');
+    academicClient = new Client({
+      host: DB_HOST,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      database: 'academicdb',
+      port: DB_PORT,
+      connectionTimeoutMillis: 5000
+    });
+
+    await academicClient.connect();
+    console.log(`Connected to PostgreSQL (academicdb)`);
+
+      console.log('Creating tables if they do not exist...');
       await pgClient.query(`
         CREATE TABLE IF NOT EXISTS "user" (
           "id" varchar PRIMARY KEY,
@@ -104,14 +122,43 @@ async function seed() {
           "role" varchar NOT NULL DEFAULT 'STUDENT'
         );
       `);
+
+      await academicClient.query(`
+        CREATE TABLE IF NOT EXISTS "academic_records" (
+          "student_id" varchar PRIMARY KEY,
+          "faculty" varchar NOT NULL,
+          "career" varchar NOT NULL,
+          "semester" integer NOT NULL,
+          "gpa" double precision NOT NULL,
+          "vulnerability_score" double precision NOT NULL
+        );
+      `);
+
+      console.log('Generating shared bcrypt hash for passwords...');
+      const salt = await bcrypt.genSalt(10);
+      const sharedHash = await bcrypt.hash('student123', salt);
+      const adminHash = await bcrypt.hash('admin123', salt);
+
+      console.log('Seeding admin user if not exists...');
+      const adminExists = await pgClient.query(`SELECT 1 FROM "user" WHERE email = 'admin@uce.edu.ec'`);
+      if (adminExists.rowCount === 0) {
+        await pgClient.query(`INSERT INTO "user" (id, email, "passwordHash", role) VALUES ('admin_default_0', 'admin@uce.edu.ec', '${adminHash}', 'ADMIN')`);
+        console.log('Admin user seeded successfully.');
+      }
+
+    console.log('Checking if database is already seeded...');
+    const userCountRes = await pgClient.query("SELECT COUNT(*) FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
+    const userCount = parseInt(userCountRes.rows[0].count, 10);
+    
+    let shouldSeed = true;
+    if (userCount > 9000) {
+      console.log(`Database already has ${userCount} synthetic students. Skipping seed insertion, but will trigger processing...`);
+      shouldSeed = false;
     }
 
-    // Generate one hash to reuse for all synthetic students to save massive CPU time
-    console.log('Generating shared bcrypt hash for "student123"...');
-    const salt = await bcrypt.genSalt(10);
-    const sharedHash = await bcrypt.hash('student123', salt);
-
-    console.log('Clearing old synthetic students from Postgres...');
+    if (shouldSeed) {
+      console.log('Clearing old synthetic students from Postgres...');
+    await academicClient.query("DELETE FROM academic_records WHERE student_id LIKE 'student_%'");
     await pgClient.query("DELETE FROM \"user\" WHERE email LIKE 'student_%@uce.edu.ec'");
     
     console.log('Clearing old cache from Redis...');
@@ -123,6 +170,7 @@ async function seed() {
 
     for (let i = 0; i < TOTAL_RECORDS; i += BATCH_SIZE) {
       let pgValues = [];
+      let academicValues = [];
       let redisPipeline = redisClient.pipeline();
 
       for (let j = 0; j < BATCH_SIZE; j++) {
@@ -134,12 +182,16 @@ async function seed() {
         // Postgres User value string
         pgValues.push(`('${id}', '${email}', '${sharedHash}', 'STUDENT')`);
 
-        // Redis Academic Record
+        // Academic Record values
         const fac = uceFaculties[idx % uceFaculties.length];
         const gpa = Math.round((10.0 + Math.random() * 10.0) * 100) / 100;
         const vuln = Math.round((Math.random() * 100.0) * 100) / 100;
         const semester = Math.floor(Math.random() * 8) + 3;
 
+        // Add to Postgres bulk insert
+        academicValues.push(`('${id}', '${fac}', '${fac} General', ${semester}, ${gpa}, ${vuln})`);
+
+        // We continue to use Redis as a CACHE for fast reads
         const record = {
           ID: id,
           StudentID: id,
@@ -151,13 +203,16 @@ async function seed() {
         };
 
         const key = `record:${id}`;
-        redisPipeline.set(key, JSON.stringify(record), 'EX', 86400); // 24 hours
+        redisPipeline.set(key, JSON.stringify(record), 'EX', 86400); // 24 hours Cache
         redisPipeline.hset('records:hash', key, JSON.stringify(record));
       }
 
       // Insert Postgres batch
       const query = `INSERT INTO "user" (id, email, "passwordHash", role) VALUES ${pgValues.join(',')}`;
       await pgClient.query(query);
+
+      const academicQuery = `INSERT INTO academic_records (student_id, faculty, career, semester, gpa, vulnerability_score) VALUES ${academicValues.join(',')}`;
+      await academicClient.query(academicQuery);
 
       // Insert Redis batch
       await redisPipeline.exec();
@@ -166,14 +221,24 @@ async function seed() {
     }
 
     console.log('Database seeded successfully!');
+    } // end if (shouldSeed)
 
     // Get an admin token to trigger the process endpoint
+    // Retry logic for login since identity-service might be restarting after DB creation
     console.log('Authenticating as admin to trigger processing...');
-    const loginRes = await fetch(`${API_GATEWAY}/api/auth/login`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({email: 'admin@uce.edu.ec', password: 'admin123'})
-    });
+    let loginRes;
+    let retries = 5;
+    while (retries > 0) {
+      loginRes = await fetch(`${API_GATEWAY}/api/auth/login`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: 'admin@uce.edu.ec', password: 'admin123'})
+      });
+      if (loginRes.ok) break;
+      console.log(`Failed to authenticate (Status: ${loginRes.status}). Retrying in 5 seconds... (${retries} left)`);
+      await new Promise(res => setTimeout(res, 5000));
+      retries--;
+    }
     
     if (!loginRes.ok) {
       console.log('Failed to authenticate as admin. Status:', loginRes.status);
@@ -199,6 +264,9 @@ async function seed() {
   } finally {
     if (pgClient) {
       await pgClient.end();
+    }
+    if (typeof academicClient !== 'undefined') {
+      await academicClient.end();
     }
     redisClient.disconnect();
   }

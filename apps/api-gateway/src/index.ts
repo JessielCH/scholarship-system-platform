@@ -71,7 +71,7 @@ fastify.get('/health', async () => {
 
 fastify.addHook('preHandler', async (request, reply) => {
   // Public routes mapping (e.g. Identity Service login/register)
-  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth')) {
+  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth') || request.method === 'OPTIONS') {
     return;
   }
 
@@ -113,7 +113,7 @@ for (const s of services) {
   fastify.register(proxy, {
     upstream: process.env[s.envVar] || s.default,
     prefix: s.prefix,
-    rewritePrefix: s.rewritePrefix || s.prefix
+    rewritePrefix: typeof s.rewritePrefix === 'string' ? s.rewritePrefix : s.prefix
   });
 }
 

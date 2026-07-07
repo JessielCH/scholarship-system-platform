@@ -2,7 +2,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: scholarship_postgres
+    container_name: scholarship-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -11,7 +11,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ../../scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -20,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: scholarship_redis
+    container_name: scholarship-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -30,27 +29,11 @@ services:
       timeout: 5s
       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: scholarship_rabbitmq
-    restart: unless-stopped
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
 
   mongodb:
     image: mongo:6.0
-    container_name: scholarship_mongodb
+    container_name: scholarship-mongodb
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
@@ -65,7 +48,28 @@ services:
       timeout: 5s
       retries: 5
 
+  mariadb:
+    image: mariadb:10.11
+    container_name: scholarship-mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: payment_db
+      MYSQL_USER: payment_user
+      MYSQL_PASSWORD: payment_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
-  rabbitmq_data:
+
   mongodb_data:
+
+  mariadb_data:

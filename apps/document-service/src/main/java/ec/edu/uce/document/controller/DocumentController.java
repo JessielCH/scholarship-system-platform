@@ -27,8 +27,8 @@ public class DocumentController {
     @PostMapping("/upload")
     public ResponseEntity<DocumentMetadata> uploadDocument(
             @RequestParam("studentId") String studentId,
-            @RequestParam("idNumber") String idNumber,
-            @RequestParam("accountNumber") String accountNumber,
+            @RequestParam(value = "idNumber", required = false) String idNumber,
+            @RequestParam(value = "accountNumber", required = false) String accountNumber,
             @RequestParam("file") MultipartFile file) {
         try {
             DocumentMetadata metadata = pipelineService.processAndStoreDocument(studentId, idNumber, accountNumber, file);
