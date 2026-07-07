@@ -92,12 +92,38 @@ export class AuthService implements OnModuleInit {
     const user = this.userRepository.create({
       email: body.email,
       passwordHash,
-      role: body.role || 'STUDENT',
+      role: 'STUDENT',
     });
 
     await this.userRepository.save(user);
 
     return { message: 'User registered successfully', email: user.email };
+  }
+
+  async registerAdmin(body: any) {
+    if (!body.email || !body.password) {
+      throw new BadRequestException('Email and password are required');
+    }
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email: body.email },
+    });
+    if (existingUser) {
+      throw new BadRequestException('Email already in use');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(body.password, salt);
+
+    const user = this.userRepository.create({
+      email: body.email,
+      passwordHash,
+      role: 'ADMIN',
+    });
+
+    await this.userRepository.save(user);
+
+    return { message: 'Admin user registered successfully', email: user.email };
   }
 
   async bulkRegister(body: any) {
