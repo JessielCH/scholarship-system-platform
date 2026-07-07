@@ -164,6 +164,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - scholarship-net
     healthcheck:
@@ -212,7 +213,12 @@ services:
       - scholarship-net
     depends_on:
       - redis
-
+      - identity-service
+      - academic-engine
+      - payment-service
+      - document-service
+      - socioeconomic-validator
+      - workflow-saga
   identity-service:
     build:
       context: ./apps/identity-service
