@@ -25,3 +25,16 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
 
   return response.json();
 }
+
+export async function fetchBlobWithAuth(endpoint: string, options: RequestInit = {}) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers = new Headers(options.headers || {});
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+  
+  if (!response.ok) {
+    throw new Error('Error al descargar el archivo');
+  }
+  return response.blob();
+}

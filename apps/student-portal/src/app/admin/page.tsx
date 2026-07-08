@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../providers/auth-provider';
 import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '../../lib/api';
+import { fetchWithAuth, fetchBlobWithAuth } from '../../lib/api';
 import { useState, useEffect } from 'react';
 import { LogOut, Search, FileCheck, UserCheck, ShieldAlert } from 'lucide-react';
 
@@ -36,6 +36,7 @@ export default function AdminDashboard() {
   const [typeFilter, setTypeFilter] = useState('');
   const [activeTab, setActiveTab] = useState<'revision' | 'upload'>('revision');
   const [visibleCount, setVisibleCount] = useState(50); // Pagination limit for performance
+  const [downloadedDocs, setDownloadedDocs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!authLoading && (!user || (user.role !== 'ADMIN' && user.role !== 'STAFF'))) {
@@ -213,8 +214,29 @@ export default function AdminDashboard() {
                        <p className="text-yellow-800 font-bold flex items-center gap-2 mb-2">
                          <FileCheck size={16} /> Documento subido: {pendingDoc.originalFilename} (Pendiente Revisión)
                        </p>
-                       <div className="flex gap-2">
+                       <div className="flex flex-wrap gap-2">
                          <button 
+                           onClick={async () => {
+                             try {
+                               const blob = await fetchBlobWithAuth(`/documents/download/${pendingDoc.id}`);
+                               const url = window.URL.createObjectURL(blob);
+                               const a = document.createElement('a');
+                               a.href = url;
+                               a.download = pendingDoc.originalFilename || 'documento.pdf';
+                               document.body.appendChild(a);
+                               a.click();
+                               a.remove();
+                               setDownloadedDocs(prev => new Set(prev).add(pendingDoc.id));
+                             } catch (err) {
+                               console.error(err);
+                               alert('Error al descargar el documento');
+                             }
+                           }}
+                           className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                           Descargar Documento
+                         </button>
+                         <button 
+                           disabled={!downloadedDocs.has(pendingDoc.id)}
                            onClick={async () => {
                              try {
                                await fetchWithAuth(`/documents/admin/review/${pendingDoc.id}?status=APPROVED`, {
@@ -227,10 +249,11 @@ export default function AdminDashboard() {
                                alert('Error al aprobar');
                              }
                            }}
-                           className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                           className={`px-3 py-1 rounded text-xs font-bold transition ${downloadedDocs.has(pendingDoc.id) ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                            Aprobar
                          </button>
                          <button 
+                           disabled={!downloadedDocs.has(pendingDoc.id)}
                            onClick={async () => {
                              const reason = prompt("Motivo de rechazo:");
                              if (reason) {
@@ -246,7 +269,7 @@ export default function AdminDashboard() {
                                }
                              }
                            }}
-                           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                           className={`px-3 py-1 rounded text-xs font-bold transition ${downloadedDocs.has(pendingDoc.id) ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                            Rechazar
                          </button>
                        </div>
