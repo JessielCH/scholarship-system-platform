@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import paho.mqtt.client as mqtt
 
-from database import db
+from src.database import db
 from datetime import datetime
 
 app = FastAPI(title="Notification Hub")
