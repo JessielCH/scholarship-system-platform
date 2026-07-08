@@ -28,8 +28,11 @@ func (h *HttpHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/commands/academic/bulk-record", h.RequireRole("ADMIN", h.handleBulkRecord))
 	mux.HandleFunc("/api/v1/commands/academic/process", h.RequireRole("ADMIN", h.handleProcess))
 	// Query routes
-	mux.HandleFunc("/api/v1/queries/academic/status", h.RequireRole("STUDENT", h.handleStatus))
-	mux.HandleFunc("/api/v1/queries/academic/rankings", h.RequireRole("STUDENT", h.handleGetAllRankings)) // Allowed for both STUDENT and ADMIN (ADMIN is allowed by default in RequireRole)
+	mux.HandleFunc("GET /api/v1/queries/academic/status", h.RequireRole("STUDENT", h.handleStatus))
+	mux.HandleFunc("GET /api/v1/queries/academic/rankings", h.RequireRole("STUDENT", h.handleGetAllRankings)) // Allowed for both STUDENT and ADMIN (ADMIN is allowed by default in RequireRole)
+	mux.HandleFunc("GET /api/v1/queries/academic/records/{id}", h.RequireRole("STUDENT", h.handleGetRecord))
+	mux.HandleFunc("PUT /api/v1/commands/academic/records/{id}", h.RequireRole("ADMIN", h.handleUpdateRecord))
+	mux.HandleFunc("DELETE /api/v1/commands/academic/records/{id}", h.RequireRole("ADMIN", h.handleDeleteRecord))
 }
 
 // RequireRole is a simple middleware to simulate RBAC logic from the Identity Service.
@@ -167,4 +170,73 @@ func (h *HttpHandler) handleGetAllRankings(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(rankings)
+}
+
+func (h *HttpHandler) handleGetRecord(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	record, err := h.queryService.GetRecord(id)
+	if err != nil {
+		if err == domain.ErrRecordNotFound {
+			http.Error(w, "Record not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Error retrieving record", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(record)
+}
+
+func (h *HttpHandler) handleUpdateRecord(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	var payload domain.AcademicRecord
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+	
+	// Force the ID to match the URL to prevent mismatches
+	payload.ID = id
+	if payload.StudentID == "" {
+		payload.StudentID = id
+	}
+
+	if err := h.cmdService.SaveRecord(payload); err != nil {
+		http.Error(w, "Error updating record", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Record updated successfully"}`))
+}
+
+func (h *HttpHandler) handleDeleteRecord(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.cmdService.DeleteRecord(id); err != nil {
+		if err == domain.ErrRecordNotFound {
+			http.Error(w, "Record not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Error deleting record", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Record deleted successfully"}`))
 }

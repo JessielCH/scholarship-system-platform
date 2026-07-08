@@ -5,6 +5,8 @@ import { AppService } from './app.service';
 import { StripeService } from './stripe.service';
 import { WebhookController } from './webhook.controller';
 import { Transaction } from './transaction.entity';
+import { PaymentController } from './payment.controller';
+import { PaymentService } from './payment.service';
 
 @Module({
   imports: [
@@ -20,7 +22,7 @@ import { Transaction } from './transaction.entity';
     }),
     TypeOrmModule.forFeature([Transaction]),
   ],
-  controllers: [AppController, WebhookController],
-  providers: [AppService, StripeService],
+  controllers: [AppController, WebhookController, PaymentController],
+  providers: [AppService, StripeService, PaymentService],
 })
 export class AppModule {}

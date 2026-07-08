@@ -12,6 +12,9 @@ export class Transaction {
   id: string;
 
   @Column()
+  userId: string;
+
+  @Column()
   sagaId: string;
 
   @Column('decimal', { precision: 10, scale: 2 })

@@ -20,3 +20,7 @@ func (s *queryService) GetRankingStatus(recordID string) (*domain.RankingScore, 
 func (s *queryService) GetAllRankings() ([]domain.RankingScore, error) {
 	return s.repo.GetAllRankings()
 }
+
+func (s *queryService) GetRecord(id string) (*domain.AcademicRecord, error) {
+	return s.repo.GetRecord(id)
+}

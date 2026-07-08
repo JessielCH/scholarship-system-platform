@@ -205,6 +205,7 @@ services:
       - AUDIT_SERVICE_URL=http://audit-ledger:8085
       - SAGA_SERVICE_URL=http://workflow-saga:8083
       - FINANCIAL_SERVICE_URL=http://payment-service:3003
+      - NOTIFICATION_SERVICE_URL=http://notification-hub:8086
       - REDIS_URL=redis://redis:6379
       - PORT=3001
     volumes:
