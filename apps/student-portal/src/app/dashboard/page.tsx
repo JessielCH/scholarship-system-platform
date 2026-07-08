@@ -40,11 +40,16 @@ export default function StudentDashboard() {
 
         let currentStatus = 'WAITING';
         let rejectionReason = '';
+        let accountNumber = 'No registrada';
+        let idNumber = user?.sub || '';
         try {
           const documents = await fetchWithAuth(`/documents/student/${user?.sub}`);
           if (documents && documents.length > 0) {
             // Get most recent document
             const latestDoc = documents[documents.length - 1];
+            accountNumber = latestDoc.accountNumber || 'No registrada';
+            idNumber = latestDoc.idNumber || user?.sub;
+            
             if (latestDoc.status === 'REJECTED') {
                currentStatus = 'REJECTED';
                rejectionReason = latestDoc.rejectionReason || 'Documento no válido.';
@@ -62,7 +67,8 @@ export default function StudentDashboard() {
         return {
           status: currentStatus,
           rejectionReason: rejectionReason,
-          studentId: user?.sub,
+          studentId: idNumber,
+          accountNumber: accountNumber,
           amount: myRanking.Type === 'EXCELLENCE' ? 800 : 500,
           type: myRanking.Type,
           documents: [],
@@ -275,8 +281,9 @@ export default function StudentDashboard() {
                                   Monto Depositado: $${scholarship.amount}
                                 </div>
                                 <div class="details">
-                                  <div class="info-row"><strong>Estudiante:</strong> <span>${user?.email}</span></div>
-                                  <div class="info-row"><strong>ID de Estudiante:</strong> <span>${scholarship.studentId}</span></div>
+                                  <div class="info-row"><strong>Nombre/Usuario:</strong> <span>${user?.email}</span></div>
+                                  <div class="info-row"><strong>Cédula (IA):</strong> <span>${scholarship.studentId}</span></div>
+                                  <div class="info-row"><strong>Cuenta Bancaria (IA):</strong> <span>${scholarship.accountNumber}</span></div>
                                   <div class="info-row"><strong>Tipo de Beca:</strong> <span>${scholarship.type === 'EXCELLENCE' ? 'Excelencia Académica' : 'Vulnerabilidad'}</span></div>
                                   <div class="info-row"><strong>Fecha de Emisión:</strong> <span>${new Date().toLocaleDateString()}</span></div>
                                   <div class="info-row"><strong>Estado:</strong> <span style="color: green; font-weight: bold;">DISBURSED (Desembolsado)</span></div>
