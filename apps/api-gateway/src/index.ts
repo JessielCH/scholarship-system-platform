@@ -110,13 +110,15 @@ const services = [
   { prefix: '/api/payments', envVar: 'PAYMENT_SERVICE_URL', default: 'http://localhost:3008', rewritePrefix: '/payments' },
   { prefix: '/payments', envVar: 'PAYMENT_SERVICE_URL', default: 'http://localhost:3008', rewritePrefix: '/payments' },
   { prefix: '/notifications', envVar: 'NOTIFICATION_SERVICE_URL', default: 'http://localhost:8086', rewritePrefix: '/notifications' },
+  { prefix: '/mqtt', envVar: 'BROKER_PRIVATE_IP', default: 'localhost', websocket: true },
 ];
 
 for (const s of services) {
   fastify.register(proxy, {
-    upstream: process.env[s.envVar] || s.default,
+    upstream: s.websocket ? `http://${process.env[s.envVar] || s.default}:9001` : (process.env[s.envVar] || s.default),
     prefix: s.prefix,
-    rewritePrefix: typeof s.rewritePrefix === 'string' ? s.rewritePrefix : s.prefix
+    rewritePrefix: typeof s.rewritePrefix === 'string' ? s.rewritePrefix : s.prefix,
+    websocket: s.websocket || false
   });
 }
 
