@@ -306,6 +306,9 @@ export default function AdminDashboard() {
                          <button 
                            onClick={() => {
                              const amount = doc.Type === 'EXCELLENCE' ? 800 : 500;
+                             const approvedDoc = studentDocs.find((d: DocumentData) => d.status === 'APPROVED') || studentDocs[0];
+                             const idNumber = approvedDoc?.idNumber || doc.StudentID;
+                             const accountNumber = approvedDoc?.accountNumber || 'No registrada';
                              const html = `
                                <html>
                                  <head>
@@ -332,7 +335,9 @@ export default function AdminDashboard() {
                                        Monto Desembolsado: $${amount}
                                      </div>
                                      <div class="details">
-                                       <div class="info-row"><strong>ID de Estudiante:</strong> <span>${doc.StudentID}</span></div>
+                                       <div class="info-row"><strong>Nombre/Usuario:</strong> <span>${idNumber}</span></div>
+                                       <div class="info-row"><strong>Cédula (IA):</strong> <span>${idNumber}</span></div>
+                                       <div class="info-row"><strong>Cuenta Bancaria (IA):</strong> <span>${accountNumber}</span></div>
                                        <div class="info-row"><strong>Facultad:</strong> <span>${doc.Faculty || 'No especificada'}</span></div>
                                        <div class="info-row"><strong>Carrera:</strong> <span>${doc.Career || 'No especificada'}</span></div>
                                        <div class="info-row"><strong>Tipo de Beca:</strong> <span>${doc.Type === 'EXCELLENCE' ? 'Excelencia Académica' : 'Vulnerabilidad'}</span></div>
