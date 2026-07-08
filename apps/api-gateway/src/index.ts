@@ -4,12 +4,16 @@ import fastifyRateLimit from '@fastify/rate-limit';
 import cors from '@fastify/cors';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import fastifyWebsocket from '@fastify/websocket';
 import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const fastify = Fastify({ logger: true });
+
+// Setup WebSocket
+fastify.register(fastifyWebsocket);
 
 // Setup Swagger
 fastify.register(fastifySwagger, {
