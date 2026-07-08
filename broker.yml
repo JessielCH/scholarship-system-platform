@@ -85,5 +85,19 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_HEAP_OPTS: "-Xmx128M -Xms128M"
 
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: scholarship_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./infrastructure/docker-compose/broker/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
 volumes:
   rabbitmq_data:
+  mosquitto_data:
+  mosquitto_log:
