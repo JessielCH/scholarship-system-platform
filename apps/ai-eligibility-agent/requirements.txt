@@ -4,3 +4,4 @@ neo4j
 scikit-learn
 pydantic
 pytest
+httpx

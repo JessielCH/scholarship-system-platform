@@ -111,3 +111,13 @@ resource "aws_s3_bucket" "documents" {
 output "documents_bucket_name" {
   value = aws_s3_bucket.documents.id
 }
+
+module "ec2_intelligence" {
+  source             = "../../modules/ec2"
+  environment        = "staging"
+  service_name       = "intelligence"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.intelligence_sg_id]
+  instance_type      = "t3.medium"
+  user_data          = local.docker_install_script
+}
