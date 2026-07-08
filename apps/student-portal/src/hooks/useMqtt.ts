@@ -50,7 +50,9 @@ export function useMqtt(studentId: string | null) {
       console.error('MQTT connection error:', err);
     });
 
-    setClient(mqttClient);
+    setTimeout(() => {
+      setClient(mqttClient);
+    }, 0);
 
     return () => {
       mqttClient.end();
