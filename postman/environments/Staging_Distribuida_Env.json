@@ -1,0 +1,61 @@
+{
+  "id": "f5c220ec-9a1b-4b13-8a9d-5a8b7c4d3e2f",
+  "name": "Staging Distribuida Env",
+  "values": [
+    {
+      "key": "edge_public_ip",
+      "value": "staging-alb-542509753.us-east-1.elb.amazonaws.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "edge_private_ip",
+      "value": "10.4.1.146",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "security_ip",
+      "value": "10.4.11.87",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "core_ip",
+      "value": "10.4.11.250",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "compute_ip",
+      "value": "10.4.11.119",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "broker_ip",
+      "value": "10.4.11.99",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "db_ip",
+      "value": "10.4.11.111",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "bucket_name",
+      "value": "uce-distribuida-staging-documents-845247406892",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "gateway_url",
+      "value": "http://staging-alb-542509753.us-east-1.elb.amazonaws.com:3000",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

@@ -85,5 +85,40 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_HEAP_OPTS: "-Xmx128M -Xms128M"
 
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: scholarship_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./infrastructure/docker-compose/broker/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
+  cassandra:
+    image: cassandra:4.1
+    container_name: scholarship_cassandra
+    restart: unless-stopped
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: "ScholarshipCluster"
+      CASSANDRA_DC: "datacenter1"
+      CASSANDRA_ENDPOINT_SNITCH: "GossipingPropertyFileSnitch"
+      HEAP_NEWSIZE: "128M"
+      MAX_HEAP_SIZE: "256M"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
 volumes:
   rabbitmq_data:
+  mosquitto_data:
+  mosquitto_log:
+  cassandra_data:
