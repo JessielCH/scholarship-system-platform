@@ -200,6 +200,7 @@ export default function AdminDashboard() {
             {filteredDocs.slice(0, visibleCount).map((doc: RankingScore) => {
               const studentDocs = documents.filter((d: DocumentData) => d.studentId === doc.StudentID);
               const pendingDoc = studentDocs.find((d: DocumentData) => d.status === 'WAITING');
+              const approvedDoc = studentDocs.find((d: DocumentData) => d.status === 'APPROVED');
 
               return (
               <div key={doc.RecordID} className="p-6 bg-gray-50 border border-gray-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden transition hover:shadow-md">
@@ -271,6 +272,41 @@ export default function AdminDashboard() {
                            }}
                            className={`px-3 py-1 rounded text-xs font-bold transition ${downloadedDocs.has(pendingDoc.id) ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                            Rechazar
+                         </button>
+                       </div>
+                    </div>
+                  )}
+
+                  {approvedDoc && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                       <p className="text-green-800 font-bold mb-2">
+                         Documento Aprobado. Listo para pago de la Beca de {doc.Type === 'EXCELLENCE' ? '$800' : '$500'}.
+                       </p>
+                       <div className="flex flex-wrap gap-2">
+                         <button 
+                           onClick={async () => {
+                             try {
+                               const res = await fetchWithAuth('/payments/checkout', {
+                                 method: 'POST',
+                                 body: JSON.stringify({ userId: doc.StudentID, amount: doc.Type === 'EXCELLENCE' ? 800 : 500 })
+                               });
+                               if (res.url) {
+                                 window.location.href = res.url;
+                               } else {
+                                 alert('Error: No se recibió URL de Stripe');
+                               }
+                             } catch (err) {
+                               console.error(err);
+                               alert('Error al iniciar pago');
+                             }
+                           }}
+                           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-bold transition">
+                           Simular Presupuesto y Pagar (Stripe)
+                         </button>
+                         <button 
+                           onClick={() => alert('Mock: Descargando recibo de pago en PDF...')}
+                           className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 px-4 py-2 rounded text-sm font-bold transition">
+                           Descargar Recibo
                          </button>
                        </div>
                     </div>

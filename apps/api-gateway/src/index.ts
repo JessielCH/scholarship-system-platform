@@ -107,6 +107,8 @@ const services = [
   { prefix: '/audit', envVar: 'AUDIT_SERVICE_URL', default: 'http://localhost:3005', rewritePrefix: '/audit' },
   { prefix: '/saga', envVar: 'SAGA_SERVICE_URL', default: 'http://localhost:3006', rewritePrefix: '/saga' },
   { prefix: '/financial', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3007', rewritePrefix: '/financial' },
+  { prefix: '/api/payments', envVar: 'PAYMENT_SERVICE_URL', default: 'http://localhost:3008', rewritePrefix: '/payments' },
+  { prefix: '/payments', envVar: 'PAYMENT_SERVICE_URL', default: 'http://localhost:3008', rewritePrefix: '/payments' },
   { prefix: '/notifications', envVar: 'NOTIFICATION_SERVICE_URL', default: 'http://localhost:8086', rewritePrefix: '/notifications' },
 ];
 
