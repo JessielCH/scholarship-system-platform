@@ -52,6 +52,7 @@ export function BulkUpload() {
           }
         }, 800);
       } catch (err) {
+        console.error(err);
         setAiAnalysis('error');
       }
     };

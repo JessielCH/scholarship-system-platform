@@ -54,8 +54,8 @@ export default function StudentDashboard() {
                currentStatus = 'VALIDATING_DOC';
             }
           }
-        } catch (e) {
-          console.warn("Document service unavailable, continuing with default status");
+        } catch (err) {
+          console.warn("Document service unavailable, continuing with default status", err);
         }
 
         // If they have a scholarship, we simulate the saga status for the UI demo

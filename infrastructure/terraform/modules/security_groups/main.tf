@@ -39,6 +39,14 @@ resource "aws_security_group" "edge" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 9001
+    to_port     = 9001
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Mosquitto WebSockets proxy"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
