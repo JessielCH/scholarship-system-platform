@@ -17,8 +17,13 @@ export function useMqtt(studentId: string | null) {
     if (!studentId) return;
 
     // Use environment variable or fallback to localhost for development
-    // In production, this will point to the Edge node proxying port 9001
-    const brokerUrl = process.env.NEXT_PUBLIC_MQTT_BROKER_URL || 'ws://localhost:9001';
+    // In production, this will point to the API Gateway proxying Mosquitto
+    let brokerUrl = process.env.NEXT_PUBLIC_MQTT_BROKER_URL || 'ws://localhost:9001';
+    
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      // Proxy MQTT through the API gateway on port 3000 (which the ALB exposes)
+      brokerUrl = `ws://${window.location.hostname}:3000/mqtt`;
+    }
     
     const mqttClient = mqtt.connect(brokerUrl);
 

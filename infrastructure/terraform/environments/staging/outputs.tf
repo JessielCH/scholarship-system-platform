@@ -23,3 +23,7 @@ output "broker_private_ip" {
 output "asg_name" {
   value = module.asg_edge.asg_name
 }
+
+output "intelligence_private_ip" {
+  value = module.ec2_intelligence.private_ip
+}

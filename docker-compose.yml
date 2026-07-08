@@ -63,7 +63,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - API_URL=http://academic-engine:8081
+      - API_URL=http://api-gateway:3001
     networks:
       - scholarship-net
     depends_on:

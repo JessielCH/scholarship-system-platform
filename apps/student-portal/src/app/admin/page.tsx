@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../providers/auth-provider';
 import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '../../lib/api';
+import { fetchWithAuth, fetchBlobWithAuth } from '../../lib/api';
 import { useState, useEffect } from 'react';
 import { LogOut, Search, FileCheck, UserCheck, ShieldAlert } from 'lucide-react';
 
@@ -25,6 +25,8 @@ interface DocumentData {
   studentId: string;
   originalFilename: string;
   status: string;
+  idNumber?: string;
+  accountNumber?: string;
 }
 
 export default function AdminDashboard() {
@@ -36,6 +38,7 @@ export default function AdminDashboard() {
   const [typeFilter, setTypeFilter] = useState('');
   const [activeTab, setActiveTab] = useState<'revision' | 'upload'>('revision');
   const [visibleCount, setVisibleCount] = useState(50); // Pagination limit for performance
+  const [downloadedDocs, setDownloadedDocs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!authLoading && (!user || (user.role !== 'ADMIN' && user.role !== 'STAFF'))) {
@@ -136,22 +139,7 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center">
-             <button 
-                onClick={async () => {
-                  try {
-                    await fetchWithAuth('/v1/commands/academic/process', { method: 'POST' });
-                    queryClient.invalidateQueries({ queryKey: ['adminRecords'] });
-                    alert('Datos calculados exitosamente. Actualizando vista...');
-                  } catch (err) {
-                    console.error(err);
-                    alert('Error al calcular datos');
-                  }
-                }}
-                className="bg-uce-blue hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg transition text-sm">
-                + Cargar Datos (Ingest)
-             </button>
-          </div>
+
         </div>
 
         {/* Tabs */}
@@ -214,6 +202,7 @@ export default function AdminDashboard() {
             {filteredDocs.slice(0, visibleCount).map((doc: RankingScore) => {
               const studentDocs = documents.filter((d: DocumentData) => d.studentId === doc.StudentID);
               const pendingDoc = studentDocs.find((d: DocumentData) => d.status === 'WAITING');
+              const approvedDoc = studentDocs.find((d: DocumentData) => d.status === 'APPROVED');
 
               return (
               <div key={doc.RecordID} className="p-6 bg-gray-50 border border-gray-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden transition hover:shadow-md">
@@ -228,8 +217,29 @@ export default function AdminDashboard() {
                        <p className="text-yellow-800 font-bold flex items-center gap-2 mb-2">
                          <FileCheck size={16} /> Documento subido: {pendingDoc.originalFilename} (Pendiente Revisión)
                        </p>
-                       <div className="flex gap-2">
+                       <div className="flex flex-wrap gap-2">
                          <button 
+                           onClick={async () => {
+                             try {
+                               const blob = await fetchBlobWithAuth(`/documents/download/${pendingDoc.id}`);
+                               const url = window.URL.createObjectURL(blob);
+                               const a = document.createElement('a');
+                               a.href = url;
+                               a.download = pendingDoc.originalFilename || 'documento.pdf';
+                               document.body.appendChild(a);
+                               a.click();
+                               a.remove();
+                               setDownloadedDocs(prev => new Set(prev).add(pendingDoc.id));
+                             } catch (err) {
+                               console.error(err);
+                               alert('Error al descargar el documento');
+                             }
+                           }}
+                           className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                           Descargar Documento
+                         </button>
+                         <button 
+                           disabled={!downloadedDocs.has(pendingDoc.id)}
                            onClick={async () => {
                              try {
                                await fetchWithAuth(`/documents/admin/review/${pendingDoc.id}?status=APPROVED`, {
@@ -242,10 +252,11 @@ export default function AdminDashboard() {
                                alert('Error al aprobar');
                              }
                            }}
-                           className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                           className={`px-3 py-1 rounded text-xs font-bold transition ${downloadedDocs.has(pendingDoc.id) ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                            Aprobar
                          </button>
                          <button 
+                           disabled={!downloadedDocs.has(pendingDoc.id)}
                            onClick={async () => {
                              const reason = prompt("Motivo de rechazo:");
                              if (reason) {
@@ -261,8 +272,96 @@ export default function AdminDashboard() {
                                }
                              }
                            }}
-                           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold transition">
+                           className={`px-3 py-1 rounded text-xs font-bold transition ${downloadedDocs.has(pendingDoc.id) ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                            Rechazar
+                         </button>
+                       </div>
+                    </div>
+                  )}
+
+                  {approvedDoc && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                       <p className="text-green-800 font-bold mb-2">
+                         Documento Aprobado. Listo para pago de la Beca de {doc.Type === 'EXCELLENCE' ? '$800' : '$500'}.
+                       </p>
+                       <div className="flex flex-wrap gap-2">
+                         <button 
+                           onClick={async () => {
+                             try {
+                               const res = await fetchWithAuth('/payments/checkout', {
+                                 method: 'POST',
+                                 body: JSON.stringify({ userId: doc.StudentID, amount: doc.Type === 'EXCELLENCE' ? 800 : 500 })
+                               });
+                               if (res.url) {
+                                 window.location.href = res.url;
+                               } else {
+                                 alert('Error: No se recibió URL de Stripe');
+                               }
+                             } catch (err) {
+                               console.error(err);
+                               alert('Error al iniciar pago');
+                             }
+                           }}
+                           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-bold transition">
+                           Simular Presupuesto y Pagar (Stripe)
+                         </button>
+                         <button 
+                           onClick={() => {
+                             const amount = doc.Type === 'EXCELLENCE' ? 800 : 500;
+                             const approvedDoc = studentDocs.find((d: DocumentData) => d.status === 'APPROVED') || studentDocs[0];
+                             const idNumber = approvedDoc?.idNumber || doc.StudentID;
+                             const accountNumber = approvedDoc?.accountNumber || 'No registrada';
+                             const html = `
+                               <html>
+                                 <head>
+                                   <title>Recibo de Beca - UCE</title>
+                                   <style>
+                                     body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+                                     .receipt-box { border: 2px solid #1a365d; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                                     .header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 20px; }
+                                     .logo { font-size: 24px; font-weight: bold; color: #1a365d; }
+                                     .details { margin: 20px 0; font-size: 16px; line-height: 1.6; }
+                                     .amount { font-size: 28px; font-weight: bold; color: #2f855a; text-align: center; margin: 20px 0; background: #f0fff4; padding: 15px; border-radius: 8px; }
+                                     .footer { text-align: center; font-size: 12px; color: #718096; margin-top: 30px; }
+                                     .info-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f7fafc; padding: 8px 0; }
+                                   </style>
+                                 </head>
+                                 <body>
+                                   <div class="receipt-box">
+                                     <div class="header">
+                                       <div class="logo">Universidad Central del Ecuador</div>
+                                       <h2>Comprobante de Desembolso de Beca</h2>
+                                       <p>Generado Oficialmente por UCE AI Core</p>
+                                     </div>
+                                     <div class="amount">
+                                       Monto Desembolsado: $${amount}
+                                     </div>
+                                     <div class="details">
+                                       <div class="info-row"><strong>Nombre/Usuario:</strong> <span>${idNumber}</span></div>
+                                       <div class="info-row"><strong>Cédula (IA):</strong> <span>${idNumber}</span></div>
+                                       <div class="info-row"><strong>Cuenta Bancaria (IA):</strong> <span>${accountNumber}</span></div>
+                                       <div class="info-row"><strong>Facultad:</strong> <span>${doc.Faculty || 'No especificada'}</span></div>
+                                       <div class="info-row"><strong>Carrera:</strong> <span>${doc.Career || 'No especificada'}</span></div>
+                                       <div class="info-row"><strong>Tipo de Beca:</strong> <span>${doc.Type === 'EXCELLENCE' ? 'Excelencia Académica' : 'Vulnerabilidad'}</span></div>
+                                       <div class="info-row"><strong>Fecha de Emisión:</strong> <span>${new Date().toLocaleDateString()}</span></div>
+                                       <div class="info-row"><strong>Estado:</strong> <span style="color: green; font-weight: bold;">DISBURSED (Aprobado)</span></div>
+                                     </div>
+                                     <div class="footer">
+                                       Este documento es un comprobante válido emitido por el sistema inteligente de becas. Las validaciones socioeconómicas y académicas han sido certificadas exitosamente.
+                                     </div>
+                                   </div>
+                                   <script>
+                                     window.onload = () => { window.print(); setTimeout(() => window.close(), 500); };
+                                   </script>
+                                 </body>
+                               </html>
+                             `;
+                             const blob = new Blob([html], { type: 'text/html' });
+                             const url = URL.createObjectURL(blob);
+                             window.open(url, '_blank');
+                           }}
+                           className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 px-4 py-2 rounded text-sm font-bold transition">
+                           Descargar Recibo
                          </button>
                        </div>
                     </div>

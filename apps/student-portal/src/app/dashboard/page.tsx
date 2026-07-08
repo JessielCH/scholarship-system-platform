@@ -7,7 +7,7 @@ import { fetchWithAuth } from '../../lib/api';
 import { Timeline } from '../../components/Timeline';
 import { BankUploadModal } from '../../components/BankUploadModal';
 import { ContractUploadModal } from '../../components/ContractUploadModal';
-import { FloatingChatbot } from '../../components/FloatingChatbot';
+
 import { useState, useEffect } from 'react';
 import { LogOut, FileText, CheckCircle2 } from 'lucide-react';
 
@@ -40,11 +40,16 @@ export default function StudentDashboard() {
 
         let currentStatus = 'WAITING';
         let rejectionReason = '';
+        let accountNumber = 'No registrada';
+        let idNumber = user?.sub || '';
         try {
           const documents = await fetchWithAuth(`/documents/student/${user?.sub}`);
           if (documents && documents.length > 0) {
             // Get most recent document
             const latestDoc = documents[documents.length - 1];
+            accountNumber = latestDoc.accountNumber || 'No registrada';
+            idNumber = latestDoc.idNumber || user?.sub;
+            
             if (latestDoc.status === 'REJECTED') {
                currentStatus = 'REJECTED';
                rejectionReason = latestDoc.rejectionReason || 'Documento no válido.';
@@ -62,7 +67,8 @@ export default function StudentDashboard() {
         return {
           status: currentStatus,
           rejectionReason: rejectionReason,
-          studentId: user?.sub,
+          studentId: idNumber,
+          accountNumber: accountNumber,
           amount: myRanking.Type === 'EXCELLENCE' ? 800 : 500,
           type: myRanking.Type,
           documents: [],
@@ -239,13 +245,68 @@ export default function StudentDashboard() {
           )}
 
           {(scholarship?.status === 'APPROVED' || scholarship?.status === 'DISBURSED') && (
-            <div className="bg-green-50 border border-green-200 p-6 rounded-lg text-center">
+            <div className="bg-green-50 border border-green-200 p-6 rounded-lg text-center flex flex-col items-center">
               <CheckCircle2 className="mx-auto text-green-500 mb-2" size={48} />
               <h4 className="font-bold text-green-800 text-xl">¡Todo está listo!</h4>
               <p className="text-sm text-green-700 mt-2">
                 Tu beca ha sido aprobada exitosamente por la Inteligencia Artificial y el Coordinador.
                 {scholarship?.status === 'DISBURSED' && (
-                  <span className="block mt-2 font-bold text-lg">Monto depositado: $ {scholarship.amount}</span>
+                  <>
+                    <span className="block mt-2 font-bold text-lg">Monto depositado: $ {scholarship.amount}</span>
+                    <button 
+                      onClick={() => {
+                        const html = `
+                          <html>
+                            <head>
+                              <title>Recibo de Beca - UCE</title>
+                              <style>
+                                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+                                .receipt-box { border: 2px solid #1a365d; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                                .header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 20px; }
+                                .logo { font-size: 24px; font-weight: bold; color: #1a365d; }
+                                .details { margin: 20px 0; font-size: 16px; line-height: 1.6; }
+                                .amount { font-size: 28px; font-weight: bold; color: #2f855a; text-align: center; margin: 20px 0; background: #f0fff4; padding: 15px; border-radius: 8px; }
+                                .footer { text-align: center; font-size: 12px; color: #718096; margin-top: 30px; }
+                                .info-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f7fafc; padding: 8px 0; }
+                              </style>
+                            </head>
+                            <body>
+                              <div class="receipt-box">
+                                <div class="header">
+                                  <div class="logo">Universidad Central del Ecuador</div>
+                                  <h2>Comprobante de Desembolso de Beca</h2>
+                                  <p>Generado Oficialmente por UCE AI Core</p>
+                                </div>
+                                <div class="amount">
+                                  Monto Depositado: $${scholarship.amount}
+                                </div>
+                                <div class="details">
+                                  <div class="info-row"><strong>Nombre/Usuario:</strong> <span>${user?.email}</span></div>
+                                  <div class="info-row"><strong>Cédula (IA):</strong> <span>${scholarship.studentId}</span></div>
+                                  <div class="info-row"><strong>Cuenta Bancaria (IA):</strong> <span>${scholarship.accountNumber}</span></div>
+                                  <div class="info-row"><strong>Tipo de Beca:</strong> <span>${scholarship.type === 'EXCELLENCE' ? 'Excelencia Académica' : 'Vulnerabilidad'}</span></div>
+                                  <div class="info-row"><strong>Fecha de Emisión:</strong> <span>${new Date().toLocaleDateString()}</span></div>
+                                  <div class="info-row"><strong>Estado:</strong> <span style="color: green; font-weight: bold;">DISBURSED (Desembolsado)</span></div>
+                                </div>
+                                <div class="footer">
+                                  Este documento es un comprobante válido emitido por el sistema inteligente de becas. Conserva este recibo para tus registros.
+                                </div>
+                              </div>
+                              <script>
+                                window.onload = () => { window.print(); setTimeout(() => window.close(), 500); };
+                              </script>
+                            </body>
+                          </html>
+                        `;
+                        const blob = new Blob([html], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                      }}
+                      className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition"
+                    >
+                      Descargar Recibo de Depósito
+                    </button>
+                  </>
                 )}
               </p>
             </div>
@@ -260,7 +321,6 @@ export default function StudentDashboard() {
         )}
       </main>
 
-      <FloatingChatbot />
 
       {showBankModal && user?.sub && (
         <BankUploadModal 
