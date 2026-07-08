@@ -11,7 +11,7 @@ import (
 
 func BenchmarkCalculateRankings(b *testing.B) {
 	repo := repositories.NewMemoryRepository()
-	service := NewCommandService(repo, repo, nil)
+	service := NewCommandService(repo, repo, nil, nil)
 
 	// Prepare 10,000 synthetic records mimicking the mock seeder
 	records := make([]domain.AcademicRecord, 10000)

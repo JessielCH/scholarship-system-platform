@@ -26,6 +26,25 @@ func (r *MemoryRepository) SaveRecord(record domain.AcademicRecord) error {
 	return nil
 }
 
+func (r *MemoryRepository) DeleteRecord(id string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, exists := r.records[id]; !exists {
+		return domain.ErrRecordNotFound
+	}
+	delete(r.records, id)
+	return nil
+}
+
+func (r *MemoryRepository) GetRecord(id string) (*domain.AcademicRecord, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if rec, exists := r.records[id]; exists {
+		return &rec, nil
+	}
+	return nil, domain.ErrRecordNotFound
+}
+
 func (r *MemoryRepository) BulkSaveRecords(records []domain.AcademicRecord) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
