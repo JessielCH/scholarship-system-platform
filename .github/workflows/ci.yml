@@ -185,14 +185,14 @@ jobs:
         working-directory: apps/ai-eligibility-agent
         run: |
           pip install -r requirements.txt
-          pytest
+          PYTHONPATH=. pytest
 
       - name: Test notification-hub
         if: contains(toJSON(needs.detect-changes.outputs.services), 'notification-hub')
         working-directory: apps/notification-hub
         run: |
           if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
-          if [ -d "tests" ]; then pytest; fi
+          if [ -d "tests" ]; then PYTHONPATH=. pytest; fi
 
   build-and-push:
     name: Build & Push Docker Images
