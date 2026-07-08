@@ -25,6 +25,8 @@ interface DocumentData {
   studentId: string;
   originalFilename: string;
   status: string;
+  idNumber?: string;
+  accountNumber?: string;
 }
 
 export default function AdminDashboard() {
