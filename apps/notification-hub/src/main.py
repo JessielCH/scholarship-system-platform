@@ -4,6 +4,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import paho.mqtt.client as mqtt
 
+from database import db
+from datetime import datetime
+
 app = FastAPI(title="Notification Hub")
 
 BROKER_HOST = os.getenv("BROKER_HOST", "localhost")
@@ -19,6 +22,7 @@ class NotificationPayload(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
+    db.connect()
     try:
         mqtt_client.connect(BROKER_HOST, BROKER_PORT, 60)
         mqtt_client.loop_start()
@@ -30,6 +34,7 @@ async def startup_event():
 async def shutdown_event():
     mqtt_client.loop_stop()
     mqtt_client.disconnect()
+    db.disconnect()
 
 @app.post("/notify")
 async def send_notification(payload: NotificationPayload):
@@ -40,8 +45,10 @@ async def send_notification(payload: NotificationPayload):
     result = mqtt_client.publish(topic, message_str, qos=1)
     
     if result.rc != mqtt.MQTT_ERR_SUCCESS:
+        db.insert_notification_log(payload.student_id, datetime.utcnow(), payload.message, payload.type, topic, "failed")
         raise HTTPException(status_code=500, detail="Failed to publish message to MQTT broker")
         
+    db.insert_notification_log(payload.student_id, datetime.utcnow(), payload.message, payload.type, topic, "sent")
     return {"status": "sent", "topic": topic, "message": payload.message}
 
 @app.get("/health")
