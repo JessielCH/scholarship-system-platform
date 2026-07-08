@@ -13,6 +13,7 @@ services:
       - SAGA_SERVICE_URL=http://scholarship-workflow-saga:8083
       - SOCIOECONOMIC_SERVICE_URL=http://scholarship-socioeconomic:8082
       - FINANCIAL_SERVICE_URL=http://scholarship-payment-service:3003
+      - NOTIFICATION_SERVICE_URL=http://scholarship-notification-hub:8086
       - JWT_SECRET=${JWT_SECRET:-secret}
       - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-public}
     ports:
@@ -28,6 +29,7 @@ services:
       - NODE_ENV=production
       - API_URL=http://scholarship-gateway:3000
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_MQTT_BROKER_URL=${NEXT_PUBLIC_MQTT_BROKER_URL:-ws://localhost:9001}
     ports:
       - "80:3000"
 
@@ -126,3 +128,15 @@ services:
       - SPRING_REDIS_PORT=6379
     ports:
       - "8082:8082"
+
+  notification-hub:
+    image: ghcr.io/jessielch/scholarship-system-platform/notification-hub:latest
+    container_name: scholarship-notification-hub
+    restart: unless-stopped
+    environment:
+      - BROKER_HOST=${BROKER_PRIVATE_IP:-localhost}
+      - BROKER_PORT=1883
+      - CASSANDRA_HOST=${BROKER_PRIVATE_IP:-localhost}
+      - CASSANDRA_PORT=9042
+    ports:
+      - "8086:8086"
