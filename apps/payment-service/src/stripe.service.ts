@@ -17,8 +17,8 @@ export class StripeService {
   }
 
   async createCheckoutSession(
-    userId: string,
-    amount: number,
+    _userId: string,
+    _amount: number,
   ): Promise<any> {
     const successUrl = process.env.FRONTEND_URL
       ? `${process.env.FRONTEND_URL}/dashboard?payment_success=true`
@@ -33,9 +33,9 @@ export class StripeService {
   }
 
   constructEvent(
-    payload: string | Buffer,
-    signature: string,
-    secret: string,
+    _payload: string | Buffer,
+    _signature: string,
+    _secret: string,
   ): any {
     return { type: 'checkout.session.completed', data: { object: { client_reference_id: 'mock_user' } } };
   }
