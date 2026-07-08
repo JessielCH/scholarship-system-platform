@@ -8,10 +8,13 @@ type CommandService interface {
 	CalculateRankings(records []domain.AcademicRecord) ([]domain.RankingScore, error)
 	SeedDatabase(count int) error
 	BulkInsertRecords(records []domain.AcademicRecord) error
+	SaveRecord(record domain.AcademicRecord) error
+	DeleteRecord(id string) error
 }
 
 // QueryService defines the business logic for querying state.
 type QueryService interface {
 	GetRankingStatus(recordID string) (*domain.RankingScore, error)
 	GetAllRankings() ([]domain.RankingScore, error)
+	GetRecord(id string) (*domain.AcademicRecord, error)
 }
