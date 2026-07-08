@@ -1,11 +1,11 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../providers/auth-provider';
 import { useRouter } from 'next/navigation';
 import { fetchWithAuth } from '../../lib/api';
 import { useState, useEffect } from 'react';
-import { LogOut, Search, FileCheck, FileX, Download, UserCheck, ShieldAlert } from 'lucide-react';
+import { LogOut, Search, FileCheck, UserCheck, ShieldAlert } from 'lucide-react';
 
 import { BulkUpload } from '../../components/BulkUpload';
 
@@ -143,7 +143,8 @@ export default function AdminDashboard() {
                     await fetchWithAuth('/v1/commands/academic/process', { method: 'POST' });
                     queryClient.invalidateQueries({ queryKey: ['adminRecords'] });
                     alert('Datos calculados exitosamente. Actualizando vista...');
-                  } catch (e) {
+                  } catch (err) {
+                    console.error(err);
                     alert('Error al calcular datos');
                   }
                 }}
@@ -236,7 +237,8 @@ export default function AdminDashboard() {
                                });
                                queryClient.invalidateQueries({ queryKey: ['adminDocuments'] });
                                alert('Documento Aprobado con éxito. Se iniciará el desembolso.');
-                             } catch (e) {
+                             } catch (err) {
+                               console.error(err);
                                alert('Error al aprobar');
                              }
                            }}
@@ -253,7 +255,8 @@ export default function AdminDashboard() {
                                  });
                                  queryClient.invalidateQueries({ queryKey: ['adminDocuments'] });
                                  alert('Documento Rechazado');
-                               } catch (e) {
+                               } catch (err) {
+                                 console.error(err);
                                  alert('Error al rechazar');
                                }
                              }

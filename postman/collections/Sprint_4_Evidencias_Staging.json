@@ -1,0 +1,196 @@
+{
+  "info": {
+    "name": "Sprint 4 - Evidencias (Staging)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "gateway_url",
+      "value": "http://35.172.67.236:3000",
+      "type": "string"
+    },
+    {
+      "key": "broker_ip",
+      "value": "10.2.11.165",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Pre-requisitos (Auth Gateway)",
+      "item": [
+        {
+          "name": "1. Register QA User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa_tester@uce.edu.ec\",\n  \"password\": \"qa123456\",\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/register",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Login QA User (Saves Token Automagically)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.access_token) {",
+                  "    pm.collectionVariables.set(\"jwt_token\", jsonData.access_token);",
+                  "    console.log(\"Token guardado exitosamente para el resto de peticiones\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@uce.edu.ec\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/login",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SCHOL-29 As a system I need to disburse funds",
+      "item": [
+        {
+          "name": "SCHOL-88 Initialize NestJS project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/financial/",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "financial",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "SCHOL-90 Handle Stripe Webhooks",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"amount\": 500\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/financial/webhooks/stripe",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "financial",
+                "webhooks",
+                "stripe"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SCHOL-32 Deploy RabbitMQ (Infra)",
+      "item": [
+        {
+          "name": "SCHOL-96 & 97 List RabbitMQ Queues via API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://{{broker_ip}}:15672/api/queues",
+              "protocol": "http",
+              "host": [
+                "{{broker_ip}}"
+              ],
+              "port": "15672",
+              "path": [
+                "api",
+                "queues"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "guest",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "guest",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
