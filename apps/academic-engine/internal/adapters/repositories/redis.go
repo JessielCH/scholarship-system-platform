@@ -249,3 +249,29 @@ func (r *RedisRepository) ClearAll() error {
 	_, err := pipe.Exec(ctx)
 	return err
 }
+
+// InvalidateRecord removes an academic record from Redis (Cache Invalidation)
+func (r *RedisRepository) InvalidateRecord(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	key := fmt.Sprintf("%s%s", recordPrefix, id)
+	
+	// We need to fetch it first to know the faculty, to remove from the set, but this might be overkill.
+	// Since we are invalidating, we can just remove it from the hash and delete the key.
+	// To be safe, we can try to fetch it first.
+	val, err := r.client.Get(ctx, key).Result()
+	if err == nil && val != "" {
+		var record domain.AcademicRecord
+		if json.Unmarshal([]byte(val), &record) == nil {
+			r.client.SRem(ctx, fmt.Sprintf("%s%s", facultyIndex, record.Faculty), id)
+		}
+	}
+
+	pipe := r.client.Pipeline()
+	pipe.Del(ctx, key)
+	pipe.HDel(ctx, recordsHashKey, id)
+	
+	_, err = pipe.Exec(ctx)
+	return err
+}

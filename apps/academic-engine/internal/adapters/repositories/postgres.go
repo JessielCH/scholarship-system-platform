@@ -65,6 +65,12 @@ func (r *PostgresRepository) EnsureSchema() error {
 		return fmt.Errorf("failed to create rankings table: %w", err)
 	}
 
+	query3 := `CREATE INDEX IF NOT EXISTS idx_academic_faculty_career ON academic_records (faculty, career);`
+	_, err = r.db.ExecContext(ctx, query3)
+	if err != nil {
+		return fmt.Errorf("failed to create index on academic_records: %w", err)
+	}
+
 	return nil
 }
 
@@ -125,6 +131,27 @@ func (r *PostgresRepository) BulkSaveRecords(records []domain.AcademicRecord) er
 	return tx.Commit()
 }
 
+// DeleteRecord removes an academic record by ID (student_id)
+func (r *PostgresRepository) DeleteRecord(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := `DELETE FROM academic_records WHERE student_id = $1`
+	res, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return domain.ErrRecordNotFound
+	}
+	return nil
+}
+
 // GetRecordsByFacultyAndCareer retrieves records filtered by faculty and career
 func (r *PostgresRepository) GetRecordsByFacultyAndCareer(faculty, career string) ([]domain.AcademicRecord, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -174,6 +201,28 @@ func (r *PostgresRepository) GetAllRecords() ([]domain.AcademicRecord, error) {
 	}
 
 	return records, rows.Err()
+}
+
+// GetRecord retrieves a single academic record by its ID (student_id)
+func (r *PostgresRepository) GetRecord(id string) (*domain.AcademicRecord, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := `SELECT student_id, faculty, career, semester, gpa, vulnerability_score 
+			  FROM academic_records WHERE student_id = $1`
+	
+	row := r.db.QueryRowContext(ctx, query, id)
+
+	var rec domain.AcademicRecord
+	if err := row.Scan(&rec.StudentID, &rec.Faculty, &rec.Career, &rec.Semester, &rec.GPA, &rec.VulnerabilityScore); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, domain.ErrRecordNotFound
+		}
+		return nil, err
+	}
+	rec.ID = rec.StudentID
+
+	return &rec, nil
 }
 
 // SaveRanking stores a ranking score in Postgres
