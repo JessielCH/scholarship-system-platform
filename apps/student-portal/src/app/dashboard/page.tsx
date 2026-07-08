@@ -7,7 +7,7 @@ import { fetchWithAuth } from '../../lib/api';
 import { Timeline } from '../../components/Timeline';
 import { BankUploadModal } from '../../components/BankUploadModal';
 import { ContractUploadModal } from '../../components/ContractUploadModal';
-import { FloatingChatbot } from '../../components/FloatingChatbot';
+
 import { useState, useEffect } from 'react';
 import { LogOut, FileText, CheckCircle2 } from 'lucide-react';
 
@@ -260,7 +260,6 @@ export default function StudentDashboard() {
         )}
       </main>
 
-      <FloatingChatbot />
 
       {showBankModal && user?.sub && (
         <BankUploadModal 
