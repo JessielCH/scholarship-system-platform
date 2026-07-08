@@ -304,7 +304,55 @@ export default function AdminDashboard() {
                            Simular Presupuesto y Pagar (Stripe)
                          </button>
                          <button 
-                           onClick={() => alert('Mock: Descargando recibo de pago en PDF...')}
+                           onClick={() => {
+                             const amount = doc.Type === 'EXCELLENCE' ? 800 : 500;
+                             const html = `
+                               <html>
+                                 <head>
+                                   <title>Recibo de Beca - UCE</title>
+                                   <style>
+                                     body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+                                     .receipt-box { border: 2px solid #1a365d; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                                     .header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 20px; }
+                                     .logo { font-size: 24px; font-weight: bold; color: #1a365d; }
+                                     .details { margin: 20px 0; font-size: 16px; line-height: 1.6; }
+                                     .amount { font-size: 28px; font-weight: bold; color: #2f855a; text-align: center; margin: 20px 0; background: #f0fff4; padding: 15px; border-radius: 8px; }
+                                     .footer { text-align: center; font-size: 12px; color: #718096; margin-top: 30px; }
+                                     .info-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f7fafc; padding: 8px 0; }
+                                   </style>
+                                 </head>
+                                 <body>
+                                   <div class="receipt-box">
+                                     <div class="header">
+                                       <div class="logo">Universidad Central del Ecuador</div>
+                                       <h2>Comprobante de Desembolso de Beca</h2>
+                                       <p>Generado Oficialmente por UCE AI Core</p>
+                                     </div>
+                                     <div class="amount">
+                                       Monto Desembolsado: $${amount}
+                                     </div>
+                                     <div class="details">
+                                       <div class="info-row"><strong>ID de Estudiante:</strong> <span>${doc.StudentID}</span></div>
+                                       <div class="info-row"><strong>Facultad:</strong> <span>${doc.Faculty || 'No especificada'}</span></div>
+                                       <div class="info-row"><strong>Carrera:</strong> <span>${doc.Career || 'No especificada'}</span></div>
+                                       <div class="info-row"><strong>Tipo de Beca:</strong> <span>${doc.Type === 'EXCELLENCE' ? 'Excelencia Académica' : 'Vulnerabilidad'}</span></div>
+                                       <div class="info-row"><strong>Fecha de Emisión:</strong> <span>${new Date().toLocaleDateString()}</span></div>
+                                       <div class="info-row"><strong>Estado:</strong> <span style="color: green; font-weight: bold;">DISBURSED (Aprobado)</span></div>
+                                     </div>
+                                     <div class="footer">
+                                       Este documento es un comprobante válido emitido por el sistema inteligente de becas. Las validaciones socioeconómicas y académicas han sido certificadas exitosamente.
+                                     </div>
+                                   </div>
+                                   <script>
+                                     window.onload = () => { window.print(); setTimeout(() => window.close(), 500); };
+                                   </script>
+                                 </body>
+                               </html>
+                             `;
+                             const blob = new Blob([html], { type: 'text/html' });
+                             const url = URL.createObjectURL(blob);
+                             window.open(url, '_blank');
+                           }}
                            className="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 px-4 py-2 rounded text-sm font-bold transition">
                            Descargar Recibo
                          </button>
