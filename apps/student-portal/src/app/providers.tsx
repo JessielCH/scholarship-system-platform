@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AuthProvider } from './providers/auth-provider';
-import { PushNotifications } from '../components/PushNotifications';
+import { PushNotifications } from '../components/push-notifications';
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
