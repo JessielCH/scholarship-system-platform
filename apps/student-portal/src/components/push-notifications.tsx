@@ -8,7 +8,7 @@ export function PushNotifications() {
   const { user } = useAuth();
   
   // Connect to MQTT broker if the user is authenticated and is a student
-  const { messages } = useMqtt(user?.id ? user.id : null);
+  const { messages } = useMqtt(user?.sub ? user.sub : null);
 
   useEffect(() => {
     if (messages.length > 0) {
