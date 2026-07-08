@@ -239,13 +239,21 @@ export default function StudentDashboard() {
           )}
 
           {(scholarship?.status === 'APPROVED' || scholarship?.status === 'DISBURSED') && (
-            <div className="bg-green-50 border border-green-200 p-6 rounded-lg text-center">
+            <div className="bg-green-50 border border-green-200 p-6 rounded-lg text-center flex flex-col items-center">
               <CheckCircle2 className="mx-auto text-green-500 mb-2" size={48} />
               <h4 className="font-bold text-green-800 text-xl">¡Todo está listo!</h4>
               <p className="text-sm text-green-700 mt-2">
                 Tu beca ha sido aprobada exitosamente por la Inteligencia Artificial y el Coordinador.
                 {scholarship?.status === 'DISBURSED' && (
-                  <span className="block mt-2 font-bold text-lg">Monto depositado: $ {scholarship.amount}</span>
+                  <>
+                    <span className="block mt-2 font-bold text-lg">Monto depositado: $ {scholarship.amount}</span>
+                    <button 
+                      onClick={() => alert('Mock: Descargando recibo de depósito...')}
+                      className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition"
+                    >
+                      Descargar Recibo de Depósito
+                    </button>
+                  </>
                 )}
               </p>
             </div>
