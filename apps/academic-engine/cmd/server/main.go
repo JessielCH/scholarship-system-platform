@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -56,8 +57,21 @@ func main() {
 	broker := broker.NewRabbitMQBroker(rabbitUrl)
 	defer broker.Close()
 
+	// Initialize Redis for Cache Invalidation (SCHOL-136)
+	redisConfig := config.NewRedisConfig()
+	redisClient := config.NewRedisClient(redisConfig)
+	var cacheRepo ports.CacheRepository
+	
+	// We can do a quick health check to see if it's connected
+	if err := redisClient.Ping(context.Background()).Err(); err == nil {
+		log.Println("✓ Connected to Redis Cache")
+		cacheRepo = repositories.NewRedisRepository(redisClient)
+	} else {
+		log.Printf("⚠️ Failed to connect to Redis Cache (invalidation disabled): %v", err)
+	}
+
 	// Initialize CQRS Services
-	cmdService := services.NewCommandService(cmdRepo, queryRepo, broker)
+	cmdService := services.NewCommandService(cmdRepo, queryRepo, broker, cacheRepo)
 	queryService := services.NewQueryService(queryRepo)
 
 	// Initialize Handlers
