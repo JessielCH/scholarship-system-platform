@@ -107,10 +107,10 @@ const services = [
   { prefix: '/audit', envVar: 'AUDIT_SERVICE_URL', default: 'http://localhost:3005', rewritePrefix: '/audit' },
   { prefix: '/saga', envVar: 'SAGA_SERVICE_URL', default: 'http://localhost:3006', rewritePrefix: '/saga' },
   { prefix: '/financial', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3007', rewritePrefix: '/financial' },
-  { prefix: '/api/payments', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/payments' },
-  { prefix: '/payments', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/payments' },
+  { prefix: '/api/payments', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/financial/payments' },
+  { prefix: '/payments', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/financial/payments' },
   { prefix: '/notifications', envVar: 'NOTIFICATION_SERVICE_URL', default: 'http://localhost:8086', rewritePrefix: '/notifications' },
-  { prefix: '/mqtt', envVar: 'BROKER_PRIVATE_IP', default: 'localhost', websocket: true },
+  { prefix: '/mqtt', envVar: 'BROKER_PRIVATE_IP', default: 'localhost', websocket: true, rewritePrefix: '/' },
 ];
 
 for (const s of services) {
