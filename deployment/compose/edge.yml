@@ -14,6 +14,7 @@ services:
       - SOCIOECONOMIC_SERVICE_URL=http://scholarship-socioeconomic:8082
       - FINANCIAL_SERVICE_URL=http://scholarship-payment-service:3003
       - NOTIFICATION_SERVICE_URL=http://scholarship-notification-hub:8086
+      - BROKER_PRIVATE_IP=${BROKER_PRIVATE_IP:-localhost}
       - JWT_SECRET=${JWT_SECRET:-secret}
       - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-public}
     ports:
