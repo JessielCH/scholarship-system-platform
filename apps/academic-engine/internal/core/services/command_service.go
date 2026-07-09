@@ -29,13 +29,15 @@ type commandService struct {
 	cmdRepo   ports.CommandRepository
 	queryRepo ports.QueryRepository
 	broker    ports.MessageBroker
+	cacheRepo ports.CacheRepository
 }
 
-func NewCommandService(cmdRepo ports.CommandRepository, queryRepo ports.QueryRepository, broker ports.MessageBroker) ports.CommandService {
+func NewCommandService(cmdRepo ports.CommandRepository, queryRepo ports.QueryRepository, broker ports.MessageBroker, cacheRepo ports.CacheRepository) ports.CommandService {
 	return &commandService{
 		cmdRepo:   cmdRepo,
 		queryRepo: queryRepo,
 		broker:    broker,
+		cacheRepo: cacheRepo,
 	}
 }
 
@@ -174,4 +176,26 @@ func (s *commandService) processGroup(records []domain.AcademicRecord) ([]domain
 	}
 
 	return scores, nil
+}
+
+func (s *commandService) SaveRecord(record domain.AcademicRecord) error {
+	if err := s.cmdRepo.SaveRecord(record); err != nil {
+		return err
+	}
+	// Invalidate cache
+	if s.cacheRepo != nil {
+		_ = s.cacheRepo.InvalidateRecord(record.ID)
+	}
+	return nil
+}
+
+func (s *commandService) DeleteRecord(id string) error {
+	if err := s.cmdRepo.DeleteRecord(id); err != nil {
+		return err
+	}
+	// Invalidate cache
+	if s.cacheRepo != nil {
+		_ = s.cacheRepo.InvalidateRecord(id)
+	}
+	return nil
 }

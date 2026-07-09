@@ -114,3 +114,13 @@ module "ec2_database" {
   instance_type      = "t3.small"
   user_data          = local.docker_install_script
 }
+
+module "ec2_intelligence" {
+  source             = "../../modules/ec2"
+  environment        = "prod"
+  service_name       = "intelligence"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.intelligence_sg_id]
+  instance_type      = "t3.medium"
+  user_data          = local.docker_install_script
+}

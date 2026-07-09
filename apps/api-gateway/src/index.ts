@@ -4,12 +4,16 @@ import fastifyRateLimit from '@fastify/rate-limit';
 import cors from '@fastify/cors';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import fastifyWebsocket from '@fastify/websocket';
 import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const fastify = Fastify({ logger: true });
+
+// Setup WebSocket
+fastify.register(fastifyWebsocket);
 
 // Setup Swagger
 fastify.register(fastifySwagger, {
@@ -107,13 +111,18 @@ const services = [
   { prefix: '/audit', envVar: 'AUDIT_SERVICE_URL', default: 'http://localhost:3005', rewritePrefix: '/audit' },
   { prefix: '/saga', envVar: 'SAGA_SERVICE_URL', default: 'http://localhost:3006', rewritePrefix: '/saga' },
   { prefix: '/financial', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3007', rewritePrefix: '/financial' },
+  { prefix: '/api/payments', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/financial/payments' },
+  { prefix: '/payments', envVar: 'FINANCIAL_SERVICE_URL', default: 'http://localhost:3003', rewritePrefix: '/financial/payments' },
+  { prefix: '/notifications', envVar: 'NOTIFICATION_SERVICE_URL', default: 'http://localhost:8086', rewritePrefix: '/notifications' },
+  { prefix: '/mqtt', envVar: 'BROKER_PRIVATE_IP', default: 'localhost', websocket: true, rewritePrefix: '/' },
 ];
 
 for (const s of services) {
   fastify.register(proxy, {
-    upstream: process.env[s.envVar] || s.default,
+    upstream: s.websocket ? `http://${process.env[s.envVar] || s.default}:9001` : (process.env[s.envVar] || s.default),
     prefix: s.prefix,
-    rewritePrefix: typeof s.rewritePrefix === 'string' ? s.rewritePrefix : s.prefix
+    rewritePrefix: typeof s.rewritePrefix === 'string' ? s.rewritePrefix : s.prefix,
+    websocket: s.websocket || false
   });
 }
 

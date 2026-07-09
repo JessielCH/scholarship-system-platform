@@ -227,15 +227,19 @@ async function seed() {
     // Retry logic for login since identity-service might be restarting after DB creation
     console.log('Authenticating as admin to trigger processing...');
     let loginRes;
-    let retries = 5;
+    let retries = 15;
     while (retries > 0) {
-      loginRes = await fetch(`${API_GATEWAY}/api/auth/login`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: 'admin@uce.edu.ec', password: 'admin123'})
-      });
-      if (loginRes.ok) break;
-      console.log(`Failed to authenticate (Status: ${loginRes.status}). Retrying in 5 seconds... (${retries} left)`);
+      try {
+        loginRes = await fetch(`${API_GATEWAY}/api/auth/login`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: 'admin@uce.edu.ec', password: 'admin123'})
+        });
+        if (loginRes.ok) break;
+        console.log(`Failed to authenticate (Status: ${loginRes.status}). Retrying in 5 seconds... (${retries} left)`);
+      } catch (e) {
+        console.log(`Failed to reach API Gateway (${e.message}). Retrying in 5 seconds... (${retries} left)`);
+      }
       await new Promise(res => setTimeout(res, 5000));
       retries--;
     }

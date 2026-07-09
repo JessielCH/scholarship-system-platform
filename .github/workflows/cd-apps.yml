@@ -93,6 +93,7 @@ jobs:
             
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             export NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
+            export NEXT_PUBLIC_MQTT_BROKER_URL=ws://${{ secrets.EDGE_PUBLIC_IP }}:9001
             export JWT_SECRET=qa-secret-key-123
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
@@ -268,6 +269,7 @@ jobs:
             
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             export NEXT_PUBLIC_API_URL=http://$ALB_DNS_NAME:3000
+            export NEXT_PUBLIC_MQTT_BROKER_URL=ws://$ALB_DNS_NAME:9001
             export JWT_SECRET=staging-secret-key-123
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
@@ -440,6 +442,7 @@ jobs:
             
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             export NEXT_PUBLIC_API_URL=http://$ALB_DNS_NAME:3000
+            export NEXT_PUBLIC_MQTT_BROKER_URL=ws://$ALB_DNS_NAME:9001
             export JWT_SECRET=prod-secret-key-123
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"

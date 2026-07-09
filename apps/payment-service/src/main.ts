@@ -6,4 +6,7 @@ async function bootstrap() {
   app.setGlobalPrefix('financial');
   await app.listen(process.env.PORT ?? 3003);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
