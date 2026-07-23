@@ -100,7 +100,7 @@ jobs:
             export JWT_SECRET=qa-secret-key-123
             export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
             export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
-            export MONGO_URI="$MONGO_URI"
+            export MONGO_URI="mongodb://admin:admin@${DATABASE_PRIVATE_IP}:27017/documents?authSource=admin"
             export DATABASE_PRIVATE_IP="$DATABASE_PRIVATE_IP"
             export BROKER_PRIVATE_IP="$BROKER_PRIVATE_IP"
             export CORE_PRIVATE_IP="$CORE_PRIVATE_IP"
