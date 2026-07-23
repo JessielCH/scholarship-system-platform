@@ -13,7 +13,7 @@ import { Transaction } from './transaction.entity';
       host: process.env.DB_HOST || 'localhost',
       port: 3306,
       username: process.env.DB_USER || 'payment_user',
-      password: process.env.DB_PASSWORD || 'payment_password',
+      password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'payment_db',
       entities: [Transaction],
       synchronize: true, // Use only in dev

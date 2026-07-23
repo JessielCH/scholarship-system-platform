@@ -12,7 +12,7 @@ import { User } from './users/user.entity';
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432'),
       username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
+      password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'identitydbqa',
       entities: [User],
       synchronize: false, // Ensure we don't accidentally drop or mutate schema
