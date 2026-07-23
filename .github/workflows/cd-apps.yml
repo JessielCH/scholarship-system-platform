@@ -29,18 +29,19 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         
-      - name: Get Terraform Outputs (QA)
-        id: tf-outputs
-        working-directory: infrastructure/terraform/environments/qa
-        env:
-          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      - name: Get EC2 Instance IPs (QA)
+        id: ec2-ips
         run: |
           AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          BUCKET_NAME="scholarship-tf-state-${AWS_ACCOUNT_ID}"
-          terraform init -input=false -backend-config="bucket=${BUCKET_NAME}" -backend-config="key=qa/terraform.tfstate" -backend-config="region=us-east-1"
-          echo "DATABASE_PRIVATE_IP=$(terraform output -raw database_private_ip)" >> $GITHUB_ENV
-          echo "BROKER_PRIVATE_IP=$(terraform output -raw broker_private_ip)" >> $GITHUB_ENV
           echo "AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}" >> $GITHUB_ENV
+          
+          # Fetch IPs dynamically by Tag Name
+          echo "DATABASE_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-database' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
+          echo "BROKER_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-broker' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
+          echo "CORE_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-core' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
+          echo "COMPUTE_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-compute' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
+          echo "SECURITY_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-security' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
+          echo "INTELLIGENCE_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-intelligence' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
           
       - name: Copy docker-compose files
         uses: appleboy/scp-action@v0.1.7
@@ -59,6 +60,10 @@ jobs:
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           DATABASE_PRIVATE_IP: ${{ env.DATABASE_PRIVATE_IP }}
           BROKER_PRIVATE_IP: ${{ env.BROKER_PRIVATE_IP }}
+          CORE_PRIVATE_IP: ${{ env.CORE_PRIVATE_IP }}
+          COMPUTE_PRIVATE_IP: ${{ env.COMPUTE_PRIVATE_IP }}
+          SECURITY_PRIVATE_IP: ${{ env.SECURITY_PRIVATE_IP }}
+          INTELLIGENCE_PRIVATE_IP: ${{ env.INTELLIGENCE_PRIVATE_IP }}
           MONGO_URI: ${{ secrets.MONGO_URI }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           AES_SECRET_KEY: ${{ secrets.AES_SECRET_KEY }}
@@ -71,7 +76,7 @@ jobs:
           host: ${{ secrets.EDGE_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DB_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,DATABASE_PRIVATE_IP,BROKER_PRIVATE_IP,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
+          envs: DB_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,DATABASE_PRIVATE_IP,BROKER_PRIVATE_IP,CORE_PRIVATE_IP,COMPUTE_PRIVATE_IP,SECURITY_PRIVATE_IP,INTELLIGENCE_PRIVATE_IP,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
           script: |
             # Setup SSH key for ubuntu user
             mkdir -p ~/.ssh
@@ -79,16 +84,15 @@ jobs:
             chmod 600 ~/.ssh/id_rsa
             printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
             chmod 600 ~/.ssh/config
-            ssh-keyscan -H $DATABASE_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
-            ssh-keyscan -H $BROKER_PRIVATE_IP >> ~/.ssh/known_hosts 2>/dev/null
-            # Setup SSH key for root user
-            sudo mkdir -p /root/.ssh
-            echo "$SSH_KEY" | sudo tee /root/.ssh/id_rsa > /dev/null
-            sudo chmod 600 /root/.ssh/id_rsa
-            sudo sh -c 'printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > /root/.ssh/config'
-            sudo chmod 600 /root/.ssh/config
-            sudo ssh-keyscan -H $DATABASE_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
-            sudo ssh-keyscan -H $BROKER_PRIVATE_IP | sudo tee -a /root/.ssh/known_hosts > /dev/null
+            
+            ALL_IPS="$DATABASE_PRIVATE_IP $BROKER_PRIVATE_IP $CORE_PRIVATE_IP $COMPUTE_PRIVATE_IP $SECURITY_PRIVATE_IP $INTELLIGENCE_PRIVATE_IP"
+            
+            for IP in $ALL_IPS; do
+              if [ -n "$IP" ]; then
+                ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null
+              fi
+            done
+
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
@@ -99,6 +103,10 @@ jobs:
             export MONGO_URI="$MONGO_URI"
             export DATABASE_PRIVATE_IP="$DATABASE_PRIVATE_IP"
             export BROKER_PRIVATE_IP="$BROKER_PRIVATE_IP"
+            export CORE_PRIVATE_IP="$CORE_PRIVATE_IP"
+            export COMPUTE_PRIVATE_IP="$COMPUTE_PRIVATE_IP"
+            export SECURITY_PRIVATE_IP="$SECURITY_PRIVATE_IP"
+            export INTELLIGENCE_PRIVATE_IP="$INTELLIGENCE_PRIVATE_IP"
             export S3_BUCKET_NAME="uce-distribuida-qa-documents-${AWS_ACCOUNT_ID}"
             
             export AES_SECRET_KEY="$AES_SECRET_KEY"
@@ -114,8 +122,10 @@ jobs:
             sudo mv /tmp/docker-compose /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
             sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
-            # Ensure Docker is installed on private nodes
-            for IP in $DATABASE_PRIVATE_IP $BROKER_PRIVATE_IP; do
+            
+            # Ensure Docker is installed on all private nodes
+            for IP in $ALL_IPS; do
+              if [ -z "$IP" ]; then continue; fi
               echo "Checking connection to $IP..."
               if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
                 echo "WARNING: Node $IP is unreachable. Skipping."
@@ -125,36 +135,60 @@ jobs:
               sudo ssh ubuntu@$IP "sudo usermod -aG docker ubuntu"
             done
             
-            # Database Node
+            # 1. Database Node
             sudo ssh ubuntu@$DATABASE_PRIVATE_IP "mkdir -p scripts"
             sudo scp -r scripts/* ubuntu@$DATABASE_PRIVATE_IP:~/scripts/
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml up -d
             
-            # Broker Node
+            # 2. Broker Node
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$BROKER_PRIVATE_IP -f deployment/compose/broker.yml pull
             sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$BROKER_PRIVATE_IP -f deployment/compose/broker.yml up -d
             
-            # Edge Node
+            # Wait for base infrastructure to be ready
+            sleep 10
+            
+            # 3. Security Node
+            if [ -n "$SECURITY_PRIVATE_IP" ]; then
+              sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p deployment/compose/keys"
+              sudo scp keys/*.pem ubuntu@$SECURITY_PRIVATE_IP:~/deployment/compose/keys/
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
+            fi
+            
+            # 4. Core Node
+            if [ -n "$CORE_PRIVATE_IP" ]; then
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml pull
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml up -d
+            fi
+            
+            # 5. Compute Node
+            if [ -n "$COMPUTE_PRIVATE_IP" ]; then
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$COMPUTE_PRIVATE_IP -f deployment/compose/compute.yml pull
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$COMPUTE_PRIVATE_IP -f deployment/compose/compute.yml up -d
+            fi
+            
+            # 6. Intelligence Node
+            if [ -n "$INTELLIGENCE_PRIVATE_IP" ]; then
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$INTELLIGENCE_PRIVATE_IP -f deployment/compose/intelligence.yml pull
+              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$INTELLIGENCE_PRIVATE_IP -f deployment/compose/intelligence.yml up -d
+            fi
+            
+            # 7. Edge Node (Run Locally on Bastion)
             sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml pull
             sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml up -d
             
-            # Auto-Seed Databases (Identity & Academic)
-            
-            # Copy scripts to database node for seeding
-            sudo ssh -o StrictHostKeyChecking=no ubuntu@$DATABASE_PRIVATE_IP "mkdir -p scripts"
-            sudo scp -o StrictHostKeyChecking=no -r scripts/* ubuntu@$DATABASE_PRIVATE_IP:~/scripts/
-
+            # Auto-Seed Databases
             echo "Waiting for services to be ready before seeding..."
             sleep 15
-            echo "Running Global Seeder inside Node container..."
+            echo "Running Global Seeder inside Node container on Database Node..."
             sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts \
               -e DB_HOST=$DATABASE_PRIVATE_IP \
               -e REDIS_HOST=$DATABASE_PRIVATE_IP \
               -e DB_USER=postgres \
               -e DB_PASSWORD=$DB_PASSWORD \
               -e DB_NAME=identitydb \
-              -e API_GATEWAY=http://localhost:3000 \
+              -e API_GATEWAY=http://${{ secrets.EDGE_PUBLIC_IP }}:3000 \
               node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
 
 

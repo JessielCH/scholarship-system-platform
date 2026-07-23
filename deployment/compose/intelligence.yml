@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  ai-eligibility-agent:
+    image: ghcr.io/jessielch/scholarship-system-platform/ai-eligibility-agent:latest
+    container_name: scholarship-ai-eligibility-agent
+    restart: unless-stopped
+    environment:
+      - PORT=8087
+      - BROKER_HOST=${BROKER_PRIVATE_IP:-localhost}
+      - BROKER_PORT=1883
+    ports:
+      - "8087:8087"
