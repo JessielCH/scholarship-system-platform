@@ -43,6 +43,11 @@ jobs:
           echo "SECURITY_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-security' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
           echo "INTELLIGENCE_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-intelligence' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
           
+      - name: Debug Connectivity
+        run: |
+          echo "Testing connectivity to EDGE_PUBLIC_IP..."
+          nc -zv ${{ secrets.EDGE_PUBLIC_IP }} 22 || echo "Failed to connect to 22"
+          
       - name: Copy docker-compose files
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -50,7 +55,9 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "deployment/compose/,scripts/"
-          target: "~/"
+          target: "/home/ubuntu/deployment"
+          debug: true
+          timeout: 30s
           
       - name: Deploy to Distributed EC2s
         uses: appleboy/ssh-action@v1.0.3
