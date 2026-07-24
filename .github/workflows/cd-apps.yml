@@ -89,7 +89,7 @@ jobs:
             
             for IP in $ALL_IPS; do
               if [ -n "$IP" ]; then
-                ssh-keyscan -H $IP >> ~/.ssh/known_hosts 2>/dev/null
+                ssh-keyscan -T 5 -H $IP >> ~/.ssh/known_hosts 2>/dev/null
               fi
             done
 
