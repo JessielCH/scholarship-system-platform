@@ -210,14 +210,26 @@ resource "aws_security_group" "database" {
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
-    security_groups = [aws_security_group.edge.id, aws_security_group.core.id]
+    security_groups = [
+      aws_security_group.edge.id,
+      aws_security_group.core.id,
+      aws_security_group.security.id,
+      aws_security_group.compute.id,
+      aws_security_group.intelligence.id
+    ]
   }
 
   ingress {
     from_port       = 27017
     to_port         = 27017
     protocol        = "tcp"
-    security_groups = [aws_security_group.core.id, aws_security_group.edge.id]
+    security_groups = [
+      aws_security_group.core.id,
+      aws_security_group.edge.id,
+      aws_security_group.compute.id,
+      aws_security_group.security.id,
+      aws_security_group.intelligence.id
+    ]
   }
 
   ingress {
