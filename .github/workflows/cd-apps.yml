@@ -63,10 +63,7 @@ jobs:
           scp -v -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa -r deployment/compose/ scripts/ ubuntu@${{ env.EDGE_DYNAMIC_IP }}:/home/ubuntu/deployment/
           
       - name: Deploy to Distributed EC2s
-        uses: appleboy/ssh-action@v1.0.3
         env:
-          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
-          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           DATABASE_PRIVATE_IP: ${{ env.DATABASE_PRIVATE_IP }}
           BROKER_PRIVATE_IP: ${{ env.BROKER_PRIVATE_IP }}
@@ -82,124 +79,179 @@ jobs:
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
           AWS_ACCOUNT_ID: ${{ env.AWS_ACCOUNT_ID }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        with:
-          host: ${{ env.EDGE_DYNAMIC_IP }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DB_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,DATABASE_PRIVATE_IP,BROKER_PRIVATE_IP,CORE_PRIVATE_IP,COMPUTE_PRIVATE_IP,SECURITY_PRIVATE_IP,INTELLIGENCE_PRIVATE_IP,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
-          script: |
-            # Setup SSH key for ubuntu user
-            mkdir -p ~/.ssh
-            echo "$SSH_KEY" > ~/.ssh/id_rsa
-            chmod 600 ~/.ssh/id_rsa
-            printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
-            chmod 600 ~/.ssh/config
-            
-            ALL_IPS="$DATABASE_PRIVATE_IP $BROKER_PRIVATE_IP $CORE_PRIVATE_IP $COMPUTE_PRIVATE_IP $SECURITY_PRIVATE_IP $INTELLIGENCE_PRIVATE_IP"
-            
-            for IP in $ALL_IPS; do
-              if [ -n "$IP" ]; then
-                ssh-keyscan -T 5 -H $IP >> ~/.ssh/known_hosts 2>/dev/null
-              fi
-            done
+          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY }}
+        run: |
+          cat << 'EOF' > deploy.sh
+          #!/bin/bash
+          # Use the environment variables that we will export before running
+          
+          # Setup SSH key for ubuntu user
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf "Host *\n  StrictHostKeyChecking no\n  ConnectTimeout 5\n" > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+          
+          ALL_IPS="$DATABASE_PRIVATE_IP $BROKER_PRIVATE_IP $CORE_PRIVATE_IP $COMPUTE_PRIVATE_IP $SECURITY_PRIVATE_IP $INTELLIGENCE_PRIVATE_IP"
+          
+          for IP in $ALL_IPS; do
+            if [ -n "$IP" ]; then
+              ssh-keyscan -T 5 -H $IP >> ~/.ssh/known_hosts 2>/dev/null
+            fi
+          done
 
-            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            export NEXT_PUBLIC_API_URL=http://${{ secrets.EDGE_PUBLIC_IP }}:3000
-            export JWT_SECRET=qa-secret-key-123
-            export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
-            export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
-            export MONGO_URI="mongodb://admin:admin@${DATABASE_PRIVATE_IP}:27017/documents?authSource=admin"
-            export DATABASE_PRIVATE_IP="$DATABASE_PRIVATE_IP"
-            export BROKER_PRIVATE_IP="$BROKER_PRIVATE_IP"
-            export CORE_PRIVATE_IP="$CORE_PRIVATE_IP"
-            export COMPUTE_PRIVATE_IP="$COMPUTE_PRIVATE_IP"
-            export SECURITY_PRIVATE_IP="$SECURITY_PRIVATE_IP"
-            export INTELLIGENCE_PRIVATE_IP="$INTELLIGENCE_PRIVATE_IP"
-            export S3_BUCKET_NAME="uce-distribuida-qa-documents-${AWS_ACCOUNT_ID}"
-            
-            export AES_SECRET_KEY="$AES_SECRET_KEY"
-            export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
-            export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
-            export AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN"
-            
-            mkdir -p keys
-            echo "$JWT_PRIVATE_KEY" > keys/private.pem
-            echo "$JWT_PUBLIC_KEY" > keys/public.pem
-            
-            curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose
-            sudo mv /tmp/docker-compose /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-            sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
-            
-            # Ensure Docker is installed on all private nodes
-            for IP in $ALL_IPS; do
-              if [ -z "$IP" ]; then continue; fi
-              echo "Checking connection to $IP..."
-              if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
-                echo "WARNING: Node $IP is unreachable. Skipping."
-                continue
-              fi
-              sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker)"
-              sudo ssh ubuntu@$IP "sudo usermod -aG docker ubuntu"
-            done
-            
-            # 1. Database Node
-            sudo ssh ubuntu@$DATABASE_PRIVATE_IP "mkdir -p scripts"
-            sudo scp -r scripts/* ubuntu@$DATABASE_PRIVATE_IP:~/scripts/
-            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
-            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml up -d
-            
-            # 2. Broker Node
-            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$BROKER_PRIVATE_IP -f deployment/compose/broker.yml pull
-            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$BROKER_PRIVATE_IP -f deployment/compose/broker.yml up -d
-            
-            # Wait for base infrastructure to be ready
-            sleep 10
-            
-            # 3. Security Node
-            if [ -n "$SECURITY_PRIVATE_IP" ]; then
-              sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p deployment/compose/keys"
-              sudo scp keys/*.pem ubuntu@$SECURITY_PRIVATE_IP:~/deployment/compose/keys/
-              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
-              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
+          echo "$GITHUB_TOKEN" | sudo docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+          
+          # Export variables for docker-compose
+          export DB_PASSWORD="$DB_PASSWORD"
+          export NEXT_PUBLIC_API_URL="http://$EDGE_PUBLIC_IP:3000"
+          export JWT_SECRET="qa-secret-key-123"
+          export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
+          export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
+          export MONGO_URI="mongodb://admin:admin@${DATABASE_PRIVATE_IP}:27017/documents?authSource=admin"
+          export DATABASE_PRIVATE_IP="$DATABASE_PRIVATE_IP"
+          export BROKER_PRIVATE_IP="$BROKER_PRIVATE_IP"
+          export CORE_PRIVATE_IP="$CORE_PRIVATE_IP"
+          export COMPUTE_PRIVATE_IP="$COMPUTE_PRIVATE_IP"
+          export SECURITY_PRIVATE_IP="$SECURITY_PRIVATE_IP"
+          export INTELLIGENCE_PRIVATE_IP="$INTELLIGENCE_PRIVATE_IP"
+          export S3_BUCKET_NAME="$S3_BUCKET_NAME"
+          export AES_SECRET_KEY="$AES_SECRET_KEY"
+          export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+          export AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN"
+          
+          mkdir -p keys
+          echo "$JWT_PRIVATE_KEY" > keys/private.pem
+          echo "$JWT_PUBLIC_KEY" > keys/public.pem
+          
+          curl -sSL "https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose
+          sudo mv /tmp/docker-compose /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+          
+          # Ensure Docker is installed on all private nodes
+          for IP in $ALL_IPS; do
+            if [ -z "$IP" ]; then continue; fi
+            echo "Checking connection to $IP..."
+            if ! ssh -o ConnectTimeout=5 ubuntu@$IP "exit" 2>/dev/null; then
+              echo "WARNING: Node $IP is unreachable. Skipping."
+              continue
             fi
+            sudo ssh ubuntu@$IP "command -v docker >/dev/null 2>&1 || (sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" docker.io docker-compose && sudo systemctl start docker && sudo systemctl enable docker)"
+            sudo ssh ubuntu@$IP "sudo usermod -aG docker ubuntu"
+            sudo ssh ubuntu@$IP "sudo docker rm -f \$(sudo docker ps -aq) 2>/dev/null || true"
+          done
+          
+          # 1. Database Node
+          sudo ssh ubuntu@$DATABASE_PRIVATE_IP "mkdir -p scripts"
+          sudo scp -r scripts/* ubuntu@$DATABASE_PRIVATE_IP:~/scripts/
+          sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml pull
+          sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$DATABASE_PRIVATE_IP -f deployment/compose/database.yml up -d
+          
+          # 2. Broker Node
+          sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$BROKER_PRIVATE_IP -f deployment/compose/broker.yml pull
+          sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$BROKER_PRIVATE_IP -f deployment/compose/broker.yml up -d
+          
+          sleep 10
+          
+          # 3. Security Node
+          if [ -n "$SECURITY_PRIVATE_IP" ]; then
+            sudo ssh ubuntu@$SECURITY_PRIVATE_IP "mkdir -p deployment/compose/keys"
+            sudo scp keys/*.pem ubuntu@$SECURITY_PRIVATE_IP:~/deployment/compose/keys/
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$SECURITY_PRIVATE_IP -f deployment/compose/security.yml up -d
+          fi
+          
+          # 4. Core Node
+          if [ -n "$CORE_PRIVATE_IP" ]; then
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml up -d
+          fi
+          
+          # 5. Compute Node
+          if [ -n "$COMPUTE_PRIVATE_IP" ]; then
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$COMPUTE_PRIVATE_IP -f deployment/compose/compute.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$COMPUTE_PRIVATE_IP -f deployment/compose/compute.yml up -d
+          fi
+          
+          # 6. Intelligence Node
+          if [ -n "$INTELLIGENCE_PRIVATE_IP" ]; then
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$INTELLIGENCE_PRIVATE_IP -f deployment/compose/intelligence.yml pull
+            sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$INTELLIGENCE_PRIVATE_IP -f deployment/compose/intelligence.yml up -d
+          fi
+          
+          # 7. Edge Node (Run Locally on Bastion)
+          sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml pull
+          sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml up -d
+          
+          sleep 15
+          
+          sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts \
+            -e DB_HOST=$DATABASE_PRIVATE_IP \
+            -e REDIS_HOST=$DATABASE_PRIVATE_IP \
+            -e DB_USER=postgres \
+            -e DB_PASSWORD=$DB_PASSWORD \
+            -e DB_NAME=identitydb \
+            -e API_GATEWAY="http://$EDGE_PUBLIC_IP:3000" \
+            node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
+          EOF
+          
+          chmod +x deploy.sh
+          scp -v -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa deploy.sh ubuntu@${{ env.EDGE_DYNAMIC_IP }}:/home/ubuntu/deploy.sh
+          
+          cat << 'EOF' > wrapper.sh
+          #!/bin/bash
+          # Wrapper to run deploy.sh with environment variables securely passed
+          export SSH_KEY="$(cat ~/.ssh/id_rsa)"
+          export JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY"
+          export JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY"
+          export DB_PASSWORD="$DB_PASSWORD"
+          export GITHUB_TOKEN="$GITHUB_TOKEN"
+          export GITHUB_ACTOR="${{ github.actor }}"
+          export DATABASE_PRIVATE_IP="$DATABASE_PRIVATE_IP"
+          export BROKER_PRIVATE_IP="$BROKER_PRIVATE_IP"
+          export CORE_PRIVATE_IP="$CORE_PRIVATE_IP"
+          export COMPUTE_PRIVATE_IP="$COMPUTE_PRIVATE_IP"
+          export SECURITY_PRIVATE_IP="$SECURITY_PRIVATE_IP"
+          export INTELLIGENCE_PRIVATE_IP="$INTELLIGENCE_PRIVATE_IP"
+          export EDGE_PUBLIC_IP="${{ secrets.EDGE_PUBLIC_IP }}"
+          export MONGO_URI="$MONGO_URI"
+          export S3_BUCKET_NAME="$S3_BUCKET_NAME"
+          export AES_SECRET_KEY="$AES_SECRET_KEY"
+          export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+          export AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN"
+          
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa ubuntu@${{ env.EDGE_DYNAMIC_IP }} << INNER_EOF
+            export SSH_KEY="\$SSH_KEY"
+            export JWT_PRIVATE_KEY="\$JWT_PRIVATE_KEY"
+            export JWT_PUBLIC_KEY="\$JWT_PUBLIC_KEY"
+            export DB_PASSWORD="\$DB_PASSWORD"
+            export GITHUB_TOKEN="\$GITHUB_TOKEN"
+            export GITHUB_ACTOR="\$GITHUB_ACTOR"
+            export DATABASE_PRIVATE_IP="\$DATABASE_PRIVATE_IP"
+            export BROKER_PRIVATE_IP="\$BROKER_PRIVATE_IP"
+            export CORE_PRIVATE_IP="\$CORE_PRIVATE_IP"
+            export COMPUTE_PRIVATE_IP="\$COMPUTE_PRIVATE_IP"
+            export SECURITY_PRIVATE_IP="\$SECURITY_PRIVATE_IP"
+            export INTELLIGENCE_PRIVATE_IP="\$INTELLIGENCE_PRIVATE_IP"
+            export EDGE_PUBLIC_IP="\$EDGE_PUBLIC_IP"
+            export MONGO_URI="\$MONGO_URI"
+            export S3_BUCKET_NAME="\$S3_BUCKET_NAME"
+            export AES_SECRET_KEY="\$AES_SECRET_KEY"
+            export AWS_ACCESS_KEY_ID="\$AWS_ACCESS_KEY_ID"
+            export AWS_SECRET_ACCESS_KEY="\$AWS_SECRET_ACCESS_KEY"
+            export AWS_SESSION_TOKEN="\$AWS_SESSION_TOKEN"
             
-            # 4. Core Node
-            if [ -n "$CORE_PRIVATE_IP" ]; then
-              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml pull
-              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$CORE_PRIVATE_IP -f deployment/compose/core.yml up -d
-            fi
-            
-            # 5. Compute Node
-            if [ -n "$COMPUTE_PRIVATE_IP" ]; then
-              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$COMPUTE_PRIVATE_IP -f deployment/compose/compute.yml pull
-              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$COMPUTE_PRIVATE_IP -f deployment/compose/compute.yml up -d
-            fi
-            
-            # 6. Intelligence Node
-            if [ -n "$INTELLIGENCE_PRIVATE_IP" ]; then
-              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$INTELLIGENCE_PRIVATE_IP -f deployment/compose/intelligence.yml pull
-              sudo -E /usr/local/bin/docker-compose -H ssh://ubuntu@$INTELLIGENCE_PRIVATE_IP -f deployment/compose/intelligence.yml up -d
-            fi
-            
-            # 7. Edge Node (Run Locally on Bastion)
-            sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml pull
-            sudo -E /usr/local/bin/docker-compose -f deployment/compose/edge.yml up -d
-            
-            # Auto-Seed Databases
-            echo "Waiting for services to be ready before seeding..."
-            sleep 15
-            echo "Running Global Seeder inside Node container on Database Node..."
-            sudo docker run --rm --network host -v /home/ubuntu/scripts:/scripts \
-              -e DB_HOST=$DATABASE_PRIVATE_IP \
-              -e REDIS_HOST=$DATABASE_PRIVATE_IP \
-              -e DB_USER=postgres \
-              -e DB_PASSWORD=$DB_PASSWORD \
-              -e DB_NAME=identitydb \
-              -e API_GATEWAY=http://${{ secrets.EDGE_PUBLIC_IP }}:3000 \
-              node:20-alpine sh -c "cd /scripts && npm install pg ioredis uuid bcryptjs && node global-seed.js"
+            bash /home/ubuntu/deploy.sh
+          INNER_EOF
+          EOF
+          
+          chmod +x wrapper.sh
+          ./wrapper.sh
+
 
 
   deploy-staging:
