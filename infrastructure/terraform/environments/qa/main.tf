@@ -86,6 +86,16 @@ module "ec2_broker" {
   user_data          = local.docker_install_script
 }
 
+module "ec2_intelligence" {
+  source             = "../../modules/ec2"
+  environment        = "qa"
+  service_name       = "intelligence"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.intelligence_sg_id]
+  instance_type      = "t2.micro"
+  user_data          = local.docker_install_script
+}
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "database_backups" {

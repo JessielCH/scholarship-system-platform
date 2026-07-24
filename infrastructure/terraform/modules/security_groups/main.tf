@@ -203,7 +203,7 @@ resource "aws_security_group" "database" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.edge.id, aws_security_group.core.id, aws_security_group.security.id, aws_security_group.compute.id]
+    security_groups = [aws_security_group.edge.id, aws_security_group.core.id, aws_security_group.security.id, aws_security_group.compute.id, aws_security_group.intelligence.id]
   }
 
   ingress {
@@ -268,7 +268,8 @@ resource "aws_security_group" "broker" {
       aws_security_group.edge.id,
       aws_security_group.core.id,
       aws_security_group.security.id,
-      aws_security_group.compute.id
+      aws_security_group.compute.id,
+      aws_security_group.intelligence.id
     ]
   }
 
@@ -352,6 +353,46 @@ resource "aws_security_group" "alb" {
 
   tags = {
     Name        = "${var.environment}-alb-sg"
+    Environment = var.environment
+  }
+}
+
+resource "aws_security_group" "intelligence" {
+  name        = "${var.environment}-intelligence-sg"
+  description = "Security Group for AI Eligibility Agent"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+    description     = "Allow testing traffic from Bastion"
+  }
+
+  ingress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
+    security_groups = [aws_security_group.edge.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${var.environment}-intelligence-sg"
     Environment = var.environment
   }
 }
