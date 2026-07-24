@@ -35,6 +35,10 @@ jobs:
           AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           echo "AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}" >> $GITHUB_ENV
           
+          EDGE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-edge' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PublicIpAddress' --output text)
+          echo "Discovered Edge IP: $EDGE_IP"
+          echo "EDGE_DYNAMIC_IP=$EDGE_IP" >> $GITHUB_ENV
+          
           # Fetch IPs dynamically by Tag Name
           echo "DATABASE_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-database' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
           echo "BROKER_PRIVATE_IP=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=qa-broker' 'Name=instance-state-name,Values=running' --query 'Reservations[*].Instances[*].PrivateIpAddress' --output text)" >> $GITHUB_ENV
@@ -51,10 +55,10 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           
           echo "Creating target directory on remote..."
-          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa ubuntu@${{ secrets.EDGE_PUBLIC_IP }} "mkdir -p /home/ubuntu/deployment"
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa ubuntu@${{ env.EDGE_DYNAMIC_IP }} "mkdir -p /home/ubuntu/deployment"
           
           echo "Copying files via SCP..."
-          scp -v -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa -r deployment/compose/ scripts/ ubuntu@${{ secrets.EDGE_PUBLIC_IP }}:/home/ubuntu/deployment/
+          scp -v -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa -r deployment/compose/ scripts/ ubuntu@${{ env.EDGE_DYNAMIC_IP }}:/home/ubuntu/deployment/
           
       - name: Deploy to Distributed EC2s
         uses: appleboy/ssh-action@v1.0.3
@@ -77,7 +81,7 @@ jobs:
           AWS_ACCOUNT_ID: ${{ env.AWS_ACCOUNT_ID }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         with:
-          host: ${{ secrets.EDGE_PUBLIC_IP }}
+          host: ${{ env.EDGE_DYNAMIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: DB_PASSWORD,JWT_PRIVATE_KEY,JWT_PUBLIC_KEY,SSH_KEY,DATABASE_PRIVATE_IP,BROKER_PRIVATE_IP,CORE_PRIVATE_IP,COMPUTE_PRIVATE_IP,SECURITY_PRIVATE_IP,INTELLIGENCE_PRIVATE_IP,MONGO_URI,S3_BUCKET_NAME,AES_SECRET_KEY,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,AWS_ACCOUNT_ID
