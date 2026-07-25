@@ -70,8 +70,8 @@ fastify.get('/health', async () => {
 });
 
 fastify.addHook('preHandler', async (request, reply) => {
-  // Public routes mapping (e.g. Identity Service login/register)
-  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth') || request.method === 'OPTIONS') {
+  // Public routes mapping (e.g. Identity Service login/register, healthcheck, docs)
+  if (request.url.startsWith('/auth') || request.url.startsWith('/api/auth') || request.url.startsWith('/health') || request.url.startsWith('/docs') || request.method === 'OPTIONS') {
     return;
   }
 
@@ -128,5 +128,8 @@ const start = async () => {
   }
 };
 
-start();
+if (process.env.NODE_ENV !== 'test') {
+  start();
+}
+export { fastify };
 // trigger ci

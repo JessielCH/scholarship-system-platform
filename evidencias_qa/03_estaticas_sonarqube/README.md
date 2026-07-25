@@ -1,5 +1,7 @@
 # 📊 Pruebas Estáticas de Código, Deuda Técnica y Cobertura (SonarQube Cloud)
 
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=JessielCH_scholarship-system-platform&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=JessielCH_scholarship-system-platform)
+
 Este directorio almacena las evidencias del análisis electro-estático de la calidad de nuestro código en TypeScript, midiendo vulnerabilidades latentes, errores de diseño, *Code Smells* y la cobertura del código con pruebas unitarias en la nube.
 
 ## 🏛️ Justificación y Configuración con SonarQube Cloud (antes SonarCloud)
@@ -9,7 +11,7 @@ Este directorio almacena las evidencias del análisis electro-estático de la ca
   ```properties
   sonar.organization=jessielch
   sonar.host.url=https://sonarcloud.io
-  sonar.projectKey=g4-uce-scholarship-system
+  sonar.projectKey=JessielCH_scholarship-system-platform
   ```
 - Se integra en automático con nuestros motores de pruebas unitarias en TypeScript (Jest y Vitest) interceptando reportes en formato LCOV (`sonar.javascript.lcov.reportPaths=**/coverage/lcov.info`) y computando milimétricamente qué porcentaje del código está testeado.
 - Nos suministra el **Quality Gate (Semáforo de Calidad)** oficial por grados desde A (Excelente) hasta E, y estima la Deuda Técnica indicando en horas reales y minutos cuánto tiempo nos costará refactorizar código defectuoso.

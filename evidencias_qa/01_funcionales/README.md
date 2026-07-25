@@ -1,20 +1,27 @@
-# 🧪 Pruebas Funcionales (5 Casos Críticos de Negocio)
+# 🧪 Pruebas Funcionales Automatizadas (End-to-End)
 
-Este directorio centraliza las pruebas funcionales end-to-end y de integración de las APIs y del Portal de Estudiantes de la universidad, utilizando **Cucumber (BDD) + Selenium / Playwright** y **Postman / Newman**.
+Esta carpeta contiene la validación funcional E2E (End-to-End) del **Sistema de Becas Universitarias**, demostrando el flujo completo del negocio mediante Selenium (UI) y validaciones de contrato de API (simulación tipo SoapUI).
 
-## 🚀 Justificación Teórica de Herramientas (Selenium vs Cucumber vs SoapUI)
-- **Por qué no SoapUI:** SoapUI fue pionero en arquitecturas SOAP y contratos XML (WSDL). En nuestra plataforma empleamos Microservicios distribuidos en Node.js/TypeScript tras un API Gateway nativo en JSON, con un frontend web (`student-portal`).
-- **Por qué elegimos Cucumber + Selenium / Playwright & Newman:** 
-  - **Cucumber** nos otorga la capacidad de modelar el comportamiento (BDD) en lenguaje natural (*Gherkin*), legibles para la universidad y evaluadores de negocio (Dado/Cuando/Entonces).
-  - **Selenium o Playwright** automatizan la interacción con la interfaz gráfica web y permiten configurar un **Hook automático que realiza un pantallazo (.png)** en cada escenario sin intervención humana.
-  - **Newman (CLI de Postman)** aprovecha nuestra colección de pruebas existente en [postman/](file:///c:/Users/jjcha/Desktop/Proyectos/Distribuida/postman) y nos exporta informes visuales completos HTML mediante `--reporter-htmlextra-export`.
+## 🚀 Flujo End-to-End Validado
 
-## 📂 Organización por Casos de Prueba
-Hemos dividido los casos priorizándolos por su **Nivel de Riesgo**:
-1. `caso_01_autenticacion_y_seguridad/` 🔴 **Riesgo Muy Alto (Crítico)**
-2. `caso_02_pago_saga_y_notificaciones/` 🔴 **Riesgo Muy Alto (Crítico)**
-3. `caso_03_elegibilidad_socioeconomica/` 🟠 **Riesgo Medio-Alto**
-4. `caso_04_malla_y_promedio_academico/` 🟡 **Riesgo Medio**
-5. `caso_05_subida_de_documentos/` 🟡 **Riesgo Medio**
+El script automatizado (`ui_automation_demo.js`) ejecuta la siguiente historia de usuario de principio a fin de forma secuencial:
 
-Ingresa a cada caso para consultar las instrucciones detalladas de los caminos evaluados y el directorio de sus correspondientes capturas.
+1. **[CASO 01] Login Admin y Vista de Becarios**
+   - El administrador ingresa al sistema y visualiza el listado de expedientes generados por el motor académico.
+2. **[CASO 02] Estudiantes (Sin Beca vs Con Beca)**
+   - Validación de roles. Un estudiante sin beca recibe la alerta de rechazo. Un estudiante con beca entra a su dashboard.
+3. **[CASO 03] Subida de Documento y Verificación**
+   - El estudiante sube su Certificado Bancario en PDF. El administrador verifica en tiempo real que el documento está en estado "Pendiente de Revisión".
+4. **[CASO 04] Aprobación y Desembolso (Saga Pattern)**
+   - El administrador aprueba el documento y ejecuta el desembolso institucional a través de la pasarela de pagos simulada.
+5. **[CASO 05] Descarga de Comprobante Oficial**
+   - El estudiante beneficiario vuelve a ingresar, verifica que su beca ha sido depositada y descarga el comprobante en formato PDF.
+
+## 📁 Estructura de Evidencias
+
+Dentro de cada carpeta de caso (ej: `caso_01_admin_y_vista_becarios`), encontrarás una subcarpeta `/capturas/` que contiene:
+- **Capturas `[SELENIUM]`**: Fotos reales del Frontend (React/Next.js) tomadas con Puppeteer.
+- **Capturas `[SOAPUI]`**: Evidencia técnica de los llamados a las APIs (Microservicios) en el Backend.
+
+---
+**✅ Script de Ejecución**: `\tests\functional\run_selenium_ui_demo.ps1`

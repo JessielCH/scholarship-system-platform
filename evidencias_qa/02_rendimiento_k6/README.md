@@ -67,8 +67,10 @@ k6 run tests/k6/login.js
 
 ## 📸 Instrucciones de Capturas y Almacenamiento en `/capturas/`
 
-Una vez concluida la prueba, el archivo `reporte_dashboard_k6.html` aparecerá creado en tu carpeta `capturas/`. Ábrelo en Chrome o Edge y guarda con estos nombres oficiales las fotos comprobatorias para GitHub:
+Una vez concluida la prueba, el archivo `reporte_dashboard_k6.html` aparecerá creado en tu carpeta `capturas/`. Para cumplir con la directriz de calidad, las pruebas de rendimiento abarcan los **5 casos de prueba funcionales**, priorizando aquellos con mayor riesgo de caída del sistema. Toma las siguientes 5 fotografías para GitHub, mapeadas uno a uno con nuestros casos:
 
-1. **`01_stress_login_alto_riesgo.png`** ➔ Captura en el dashboard HTML donde constan los gráficos circulares de pastel (*Pie Charts*) y la barra con Checks verdes probando la tolerancia ante 100 VUs concurrentes lanzados de golpe.
-2. **`02_stress_pagos_saga.png`** ➔ Clona este experimento con un segundo script enviando peticiones de carga al endpoint del servicio de transacciones del pago bancario (Saga), capturando el reporte que demuestre el comportamiento al estrés.
-3. **`03_grafica_latencia_y_cuellos_de_botella.png`** ➔ Dentro de tu informe de k6, toma una fotografía enfocando en detalle la tabla analítica del apartado `http_req_duration` (Latencias de respuesta en milisegundos: Promedio, Media, Percentiles P95, P99 y Tiempos Máximos) para sustentar ante tu jurado auditor la agilidad y resiliencia máxima del sistema.
+1. **`01_stress_caso_1_y_2_login_alto_riesgo.png`** ➔ (Riesgo ALTO) Dashboard HTML mostrando el estrés ante 100 VUs intentando hacer Login masivo simultáneamente (autenticando Admin y Estudiantes). Se debe ver la tolerancia a las barreras 429 de Redis.
+2. **`02_stress_caso_3_upload_documentos.png`** ➔ (Riesgo MEDIO) Reporte comprobando el rendimiento del microservicio de documentos (S3) al recibir cientos de streams de archivos PDF en simultáneo.
+3. **`03_stress_caso_4_motor_academico.png`** ➔ (Riesgo MEDIO) Saturación simulada de peticiones GET hacia el motor de validación de mallas curriculares y promedios.
+4. **`04_stress_caso_5_pagos_saga_alto_riesgo.png`** ➔ (Riesgo ALTO) Reporte de latencias tras inyectar peticiones masivas al endpoint del servicio de transacciones del pago bancario (Saga / Stripe).
+5. **`05_grafica_latencia_y_cuellos_de_botella.png`** ➔ Captura general de la tabla analítica del apartado `http_req_duration` (Percentiles P95, P99 y Tiempos Máximos) para sustentar la agilidad y resiliencia máxima ante los 5 casos priorizados.

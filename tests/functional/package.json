@@ -1,0 +1,14 @@
+{
+  "name": "functional-qa-framework",
+  "version": "1.0.0",
+  "description": "Enterprise Cucumber BDD + Puppeteer(Selenium) automation for QA screenshots",
+  "main": "index.js",
+  "scripts": {
+    "test": "cucumber-js"
+  },
+  "dependencies": {
+    "@cucumber/cucumber": "^10.0.0",
+    "axios": "^1.6.0",
+    "puppeteer": "^22.0.0"
+  }
+}
