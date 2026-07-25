@@ -9,7 +9,19 @@ import { BankUploadModal } from '../../components/BankUploadModal';
 import { ContractUploadModal } from '../../components/ContractUploadModal';
 import { FloatingChatbot } from '../../components/FloatingChatbot';
 import { useState, useEffect } from 'react';
-import { LogOut, FileText, CheckCircle2 } from 'lucide-react';
+import { LogOut, FileText, CheckCircle2, CreditCard, Receipt as ReceiptIcon } from 'lucide-react';
+import { StripePaymentModal } from '../../components/StripePaymentModal';
+import { PaymentReceiptModal } from '../../components/PaymentReceiptModal';
+import { getReceiptByStudentId, PaymentReceipt } from '../../lib/receipts';
+
+interface ScholarshipStatus {
+  status: string;
+  studentId?: string;
+  rejectionReason?: string;
+  amount?: number;
+  type?: string;
+  documents?: unknown[];
+}
 
 export default function StudentDashboard() {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -17,6 +29,20 @@ export default function StudentDashboard() {
   
   const [showBankModal, setShowBankModal] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
+  const [showStripeModal, setShowStripeModal] = useState(false);
+  const [viewingReceipt, setViewingReceipt] = useState<PaymentReceipt | null>(null);
+  const [myReceipt, setMyReceipt] = useState<PaymentReceipt | null>(null);
+
+  useEffect(() => {
+    if (user?.sub) {
+      setMyReceipt(getReceiptByStudentId(user.sub));
+    }
+    const handleUpdate = () => {
+      if (user?.sub) setMyReceipt(getReceiptByStudentId(user.sub));
+    };
+    window.addEventListener('receipt_updated', handleUpdate);
+    return () => window.removeEventListener('receipt_updated', handleUpdate);
+  }, [user?.sub]);
 
   useEffect(() => {
     if (!authLoading && (!user || (user.role !== 'STUDENT' && user.role !== 'ADMIN'))) {
@@ -27,7 +53,7 @@ export default function StudentDashboard() {
   // Query to get scholarship status from API Gateway -> Saga Service or Document Service
   // For this implementation, we will fetch from academic or saga, but since identity might not have it all,
   // we'll mock the data fetching structure that points to our saga-service.
-  const { data: scholarship, isLoading, refetch } = useQuery({
+  const { data: scholarship, isLoading, refetch } = useQuery<ScholarshipStatus>({
     queryKey: ['sagaStatus', user?.sub],
     queryFn: async () => {
       try {
@@ -64,7 +90,7 @@ export default function StudentDashboard() {
           rejectionReason: rejectionReason,
           studentId: user?.sub,
           amount: myRanking.Type === 'EXCELLENCE' ? 800 : 500,
-          type: myRanking.Type,
+          type: String(myRanking.Type || 'EXCELLENCE'),
           documents: [],
         };
       } catch (e) {
@@ -147,7 +173,7 @@ export default function StudentDashboard() {
 
             {/* Timeline */}
             <div className="mb-8">
-              <Timeline currentStatus={scholarship?.status || 'SELECTED'} />
+              <Timeline currentStatus={myReceipt ? 'DISBURSED' : (scholarship?.status || 'SELECTED')} />
             </div>
 
         {/* Action Area depending on Status */}
@@ -240,16 +266,42 @@ export default function StudentDashboard() {
             </div>
           )}
 
-          {(scholarship?.status === 'APPROVED' || scholarship?.status === 'DISBURSED') && (
-            <div className="bg-green-50 border border-green-200 p-6 rounded-lg text-center">
-              <CheckCircle2 className="mx-auto text-green-500 mb-2" size={48} />
-              <h4 className="font-bold text-green-800 text-xl">¡Todo está listo!</h4>
-              <p className="text-sm text-green-700 mt-2">
-                Tu beca ha sido aprobada exitosamente por la Inteligencia Artificial y el Coordinador.
-                {scholarship?.status === 'DISBURSED' && (
-                  <span className="block mt-2 font-bold text-lg">Monto depositado: $ {scholarship.amount}</span>
+          {(scholarship?.status === 'APPROVED' || scholarship?.status === 'DISBURSED' || myReceipt) && (
+            <div className="bg-green-50 border border-green-200 p-8 rounded-xl text-center space-y-4 shadow-sm">
+              <CheckCircle2 className="mx-auto text-green-500 mb-2" size={56} />
+              <h4 className="font-extrabold text-green-800 text-2xl">
+                {myReceipt ? '¡Beca Desembolsada Exitosamente!' : '¡Beca Aprobada para Desembolso!'}
+              </h4>
+              <p className="text-sm text-green-700 max-w-lg mx-auto">
+                Tu beca ha sido aprobada por la Inteligencia Artificial y el Coordinador de Bienestar Estudiantil.
+                {myReceipt ? (
+                  <span className="block mt-2 font-bold text-base text-slate-800 bg-white p-3 rounded-lg border border-green-200 shadow-inner font-mono">
+                    💵 Depósito Procesado: ${myReceipt.amount}.00 USD (Ref: {myReceipt.transactionId})
+                  </span>
+                ) : (
+                  <span className="block mt-2 font-medium text-slate-700">
+                    Tu expediente está listo para la transferencia electrónica mediante el sistema Stripe Connect.
+                  </span>
                 )}
               </p>
+              
+              <div className="pt-2 flex flex-wrap justify-center gap-4">
+                {myReceipt ? (
+                  <button
+                    onClick={() => setViewingReceipt(myReceipt)}
+                    className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg transition"
+                  >
+                    <ReceiptIcon size={16} /> Ver y Descargar Comprobante de Pago
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowStripeModal(true)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 transition animate-bounce"
+                  >
+                    <CreditCard size={16} /> Abrir Plataforma Stripe y Simular Pago
+                  </button>
+                )}
+              </div>
             </div>
           )}
           
@@ -283,6 +335,27 @@ export default function StudentDashboard() {
             setShowContractModal(false);
             refetch();
           }} 
+        />
+      )}
+
+      {showStripeModal && user?.sub && (
+        <StripePaymentModal
+          studentId={user.sub}
+          amount={Number(scholarship?.amount || 800)}
+          type={String(scholarship?.type || 'EXCELLENCE')}
+          onClose={() => setShowStripeModal(false)}
+          onSuccess={(receipt) => {
+            setShowStripeModal(false);
+            setMyReceipt(receipt);
+            refetch();
+          }}
+        />
+      )}
+
+      {viewingReceipt && (
+        <PaymentReceiptModal
+          receipt={viewingReceipt}
+          onClose={() => setViewingReceipt(null)}
         />
       )}
     </div>

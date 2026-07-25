@@ -5,7 +5,10 @@ import { useAuth } from '../providers/auth-provider';
 import { useRouter } from 'next/navigation';
 import { fetchWithAuth } from '../../lib/api';
 import { useState, useEffect } from 'react';
-import { LogOut, Search, FileCheck, FileX, Download, UserCheck, ShieldAlert } from 'lucide-react';
+import { LogOut, Search, FileCheck, FileX, Download, UserCheck, ShieldAlert, CreditCard, DollarSign, Receipt as ReceiptIcon, CheckCircle2 } from 'lucide-react';
+import { StripePaymentModal } from '../../components/StripePaymentModal';
+import { PaymentReceiptModal } from '../../components/PaymentReceiptModal';
+import { getReceipts, PaymentReceipt } from '../../lib/receipts';
 
 import { BulkUpload } from '../../components/BulkUpload';
 
@@ -36,6 +39,16 @@ export default function AdminDashboard() {
   const [typeFilter, setTypeFilter] = useState('');
   const [activeTab, setActiveTab] = useState<'revision' | 'upload'>('revision');
   const [visibleCount, setVisibleCount] = useState(50); // Pagination limit for performance
+  const [selectedForPayment, setSelectedForPayment] = useState<RankingScore | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<PaymentReceipt | null>(null);
+  const [receiptsMap, setReceiptsMap] = useState<Record<string, PaymentReceipt>>({});
+
+  useEffect(() => {
+    setReceiptsMap(getReceipts());
+    const handleUpdate = () => setReceiptsMap(getReceipts());
+    window.addEventListener('receipt_updated', handleUpdate);
+    return () => window.removeEventListener('receipt_updated', handleUpdate);
+  }, []);
 
   useEffect(() => {
     if (!authLoading && (!user || (user.role !== 'ADMIN' && user.role !== 'STAFF'))) {
@@ -213,6 +226,8 @@ export default function AdminDashboard() {
             {filteredDocs.slice(0, visibleCount).map((doc: RankingScore) => {
               const studentDocs = documents.filter((d: DocumentData) => d.studentId === doc.StudentID);
               const pendingDoc = studentDocs.find((d: DocumentData) => d.status === 'WAITING');
+              const approvedDoc = studentDocs.find((d: DocumentData) => d.status === 'APPROVED');
+              const existingReceipt = receiptsMap[doc.StudentID];
 
               return (
               <div key={doc.RecordID} className="p-6 bg-gray-50 border border-gray-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden transition hover:shadow-md">
@@ -235,7 +250,7 @@ export default function AdminDashboard() {
                                  method: 'PUT'
                                });
                                queryClient.invalidateQueries({ queryKey: ['adminDocuments'] });
-                               alert('Documento Aprobado con éxito. Se iniciará el desembolso.');
+                               alert('Documento Aprobado con éxito. Se habilitará el botón para el pago.');
                              } catch (e) {
                                alert('Error al aprobar');
                              }
@@ -264,6 +279,31 @@ export default function AdminDashboard() {
                        </div>
                     </div>
                   )}
+
+                  {!pendingDoc && (approvedDoc || doc.Type) && (
+                    <div className="mt-3 pt-3 border-t border-gray-200/80 flex flex-wrap items-center gap-3">
+                      {existingReceipt ? (
+                        <div className="flex items-center gap-3 bg-green-50 px-3.5 py-2 rounded-lg border border-green-200">
+                          <span className="text-xs font-bold text-green-800 flex items-center gap-1.5">
+                            <CheckCircle2 size={16} className="text-green-600" /> Desembolso de ${existingReceipt.amount} Pagado
+                          </span>
+                          <button
+                            onClick={() => setViewingReceipt(existingReceipt)}
+                            className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
+                          >
+                            <ReceiptIcon size={13} /> Ver Comprobante de Respaldo
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedForPayment(doc)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition shadow-md shadow-indigo-100"
+                        >
+                          <CreditCard size={15} /> Simular Desembolso Stripe ({doc.Type === 'EXCELLENCE' ? '$800' : '$500'})
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )})}
@@ -284,6 +324,27 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+        )}
+
+        {selectedForPayment && (
+          <StripePaymentModal
+            studentId={selectedForPayment.StudentID}
+            faculty={selectedForPayment.Faculty}
+            career={selectedForPayment.Career}
+            amount={selectedForPayment.Type === 'EXCELLENCE' ? 800 : 500}
+            type={selectedForPayment.Type}
+            onClose={() => setSelectedForPayment(null)}
+            onSuccess={(receipt) => {
+              setReceiptsMap(getReceipts());
+            }}
+          />
+        )}
+
+        {viewingReceipt && (
+          <PaymentReceiptModal
+            receipt={viewingReceipt}
+            onClose={() => setViewingReceipt(null)}
+          />
         )}
       </main>
 
