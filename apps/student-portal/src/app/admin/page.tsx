@@ -229,7 +229,7 @@ export default function AdminDashboard() {
             {filteredDocs.slice(0, visibleCount).map((doc: RankingScore) => {
               const studentDocs = documents.filter((d: DocumentData) => d.studentId === doc.StudentID);
               const pendingDoc = studentDocs.find((d: DocumentData) => d.status === 'WAITING');
-              const approvedDoc = studentDocs.find((d: DocumentData) => d.status === 'APPROVED');
+              const approvedDoc = studentDocs.find((d: DocumentData) => d.status === 'APPROVED' || d.status === 'DISBURSED');
               const existingReceipt = receiptsMap[doc.StudentID];
 
               return (

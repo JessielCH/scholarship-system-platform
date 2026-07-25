@@ -7,10 +7,8 @@ import { fetchWithAuth } from '../../lib/api';
 import { Timeline } from '../../components/Timeline';
 import { BankUploadModal } from '../../components/BankUploadModal';
 import { ContractUploadModal } from '../../components/ContractUploadModal';
-import { FloatingChatbot } from '../../components/FloatingChatbot';
 import { useState, useEffect } from 'react';
-import { LogOut, FileText, CheckCircle2, CreditCard, Receipt as ReceiptIcon } from 'lucide-react';
-import { StripePaymentModal } from '../../components/StripePaymentModal';
+import { LogOut, FileText, CheckCircle2, Receipt as ReceiptIcon } from 'lucide-react';
 import { PaymentReceiptModal } from '../../components/PaymentReceiptModal';
 import { getReceiptByStudentId, PaymentReceipt } from '../../lib/receipts';
 
@@ -29,7 +27,6 @@ export default function StudentDashboard() {
   
   const [showBankModal, setShowBankModal] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
-  const [showStripeModal, setShowStripeModal] = useState(false);
   const [viewingReceipt, setViewingReceipt] = useState<PaymentReceipt | null>(null);
   const [myReceipt, setMyReceipt] = useState<PaymentReceipt | null>(null);
 
@@ -70,21 +67,31 @@ export default function StudentDashboard() {
         let currentStatus = 'WAITING';
         let rejectionReason = '';
         try {
-          const documents = await fetchWithAuth(`/documents/student/${user?.sub}`);
-          if (documents && documents.length > 0) {
-            // Get most recent document
-            const latestDoc = documents[documents.length - 1];
-            if (latestDoc.status === 'REJECTED') {
-               currentStatus = 'REJECTED';
-               rejectionReason = latestDoc.rejectionReason || 'Documento no válido.';
-            } else if (latestDoc.status === 'APPROVED') {
-               currentStatus = 'APPROVED'; // Or DISBURSED if saga is done, but we use APPROVED for now
-            } else if (latestDoc.status === 'WAITING') {
-               currentStatus = 'VALIDATING_DOC';
+          const documents = await fetchWithAuth(`/documents/student/${user?.sub}`) as unknown[];
+          if (Array.isArray(documents) && documents.length > 0) {
+            const hasDisbursed = documents.some((d: Record<string, string>) => d.status === 'DISBURSED' || d.status === 'COMPLETED') || getReceiptByStudentId(user?.sub || '');
+            const hasApproved = documents.some((d: Record<string, string>) => d.status === 'APPROVED');
+            const hasWaiting = documents.some((d: Record<string, string>) => d.status === 'WAITING');
+            const rejectedDoc = documents.find((d: Record<string, string>) => d.status === 'REJECTED') as Record<string, string> | undefined;
+
+            if (hasDisbursed) {
+              currentStatus = 'DISBURSED';
+            } else if (hasApproved) {
+              currentStatus = 'APPROVED';
+            } else if (hasWaiting) {
+              currentStatus = 'VALIDATING_DOC';
+            } else if (rejectedDoc) {
+              currentStatus = 'REJECTED';
+              rejectionReason = rejectedDoc.rejectionReason || 'Documento no válido, por favor verifique.';
             }
+          } else if (getReceiptByStudentId(user?.sub || '')) {
+            currentStatus = 'DISBURSED';
           }
         } catch {
-          console.warn("Document service unavailable, continuing with default status");
+          if (getReceiptByStudentId(user?.sub || '')) {
+            currentStatus = 'DISBURSED';
+          }
+          console.warn("Document service unavailable, continuing with evaluated status");
         }
 
         // If they have a scholarship, we simulate the saga status for the UI demo
@@ -297,12 +304,9 @@ export default function StudentDashboard() {
                     <ReceiptIcon size={16} /> Ver y Descargar Comprobante de Pago Oficial
                   </button>
                 ) : (
-                  <button
-                    onClick={() => setShowStripeModal(true)}
-                    className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-6 py-3.5 rounded-xl text-sm font-extrabold flex items-center gap-2.5 shadow-xl shadow-green-200 transition transform hover:scale-105"
-                  >
-                    <CreditCard size={18} /> Solicitar Desembolso en Cuenta Bancaria
-                  </button>
+                  <div className="bg-white px-5 py-3.5 rounded-xl border border-green-300 text-slate-700 text-sm font-semibold shadow-inner max-w-md">
+                    ⏳ El Departamento Financiero se encuentra procesando tu desembolso oficial. No requieres realizar ninguna acción adicional.
+                  </div>
                 )}
               </div>
             </div>
@@ -316,8 +320,6 @@ export default function StudentDashboard() {
         </>
         )}
       </main>
-
-      <FloatingChatbot />
 
       {showBankModal && user?.sub && (
         <BankUploadModal 
@@ -338,20 +340,6 @@ export default function StudentDashboard() {
             setShowContractModal(false);
             refetch();
           }} 
-        />
-      )}
-
-      {showStripeModal && user?.sub && (
-        <StripePaymentModal
-          studentId={user.sub}
-          amount={Number(scholarship?.amount || 800)}
-          type={String(scholarship?.type || 'EXCELLENCE')}
-          onClose={() => setShowStripeModal(false)}
-          onSuccess={(receipt) => {
-            setShowStripeModal(false);
-            setMyReceipt(receipt);
-            refetch();
-          }}
         />
       )}
 
