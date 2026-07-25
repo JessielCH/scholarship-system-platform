@@ -67,7 +67,7 @@ export default function StudentDashboard() {
         let currentStatus = 'WAITING';
         let rejectionReason = '';
         try {
-          const documents = await fetchWithAuth(`/documents/student/${user?.sub}`) as unknown[];
+          const documents = (await fetchWithAuth(`/documents/student/${user?.sub}`) || []) as Array<Record<string, string>>;
           if (Array.isArray(documents) && documents.length > 0) {
             const hasDisbursed = documents.some((d: Record<string, string>) => d.status === 'DISBURSED' || d.status === 'COMPLETED') || getReceiptByStudentId(user?.sub || '');
             const hasApproved = documents.some((d: Record<string, string>) => d.status === 'APPROVED');

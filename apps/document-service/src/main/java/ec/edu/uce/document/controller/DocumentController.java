@@ -89,7 +89,7 @@ public class DocumentController {
                         saved.getStudentId(), saved.getId(), saved.getStatus(), saved.getRejectionReason());
                 rabbitTemplate.convertAndSend("document.events.exchange", "document.status.changed", eventMessage);
             } catch (Exception ex) {
-                log.warn("No se pudo notificar el cambio a RabbitMQ (operando en modo resiliente): {}", ex.getMessage());
+                System.err.println("No se pudo notificar el cambio a RabbitMQ (operando en modo resiliente): " + ex.getMessage());
             }
             
             return ResponseEntity.ok(saved);
