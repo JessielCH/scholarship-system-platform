@@ -1,0 +1,102 @@
+{
+  "info": {
+    "_postman_id": "d4445555-d123-4c56-d789-e01234567892",
+    "name": "PROD Watcher - MAX COLLECTION V3",
+    "description": "Coleccion extrema de Produccion (Endpoints seguros y funcionales).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Identity & Auth (PROD)",
+      "item": [
+        {
+          "name": "1.1 Login Administrador (Auto-set Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.environment.set(\"token\", jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@uce.edu.ec\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "1.2 Registro (CRASHEA CON 500 EN PROD IGUAL QUE EN QA)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"prod_test_student@uce.edu.ec\",\n  \"password\": \"password123\",\n  \"name\": \"Test Student\"\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Academic Engine (CQRS - PROD)",
+      "item": [
+        {
+          "name": "2.1 [CQRS WRITE] Registrar Nota Individual",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"faculty\": \"Ingenieria\",\n  \"career\": \"Sistemas\",\n  \"grade\": 19.5,\n  \"credits_total\": 120,\n  \"credits_approved\": 120\n}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/v1/commands/academic/records/admin_0", "host": ["{{baseUrl}}"], "path": ["api", "v1", "commands", "academic", "records", "admin_0"]}
+          }
+        },
+        {
+          "name": "2.2 [CQRS READ] Ver Rankings Generados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/api/v1/queries/academic/rankings", "host": ["{{baseUrl}}"], "path": ["api", "v1", "queries", "academic", "rankings"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Document Storage (S3 - PROD)",
+      "item": [
+        {
+          "name": "3.1 Subir Documento Multipart (¡FUNCIONA EN PROD!)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "file", "type": "file", "src": []},
+                {"key": "studentId", "value": "admin_0", "type": "text"}
+              ]
+            },
+            "url": {"raw": "{{baseUrl}}/api/documents/upload", "host": ["{{baseUrl}}"], "path": ["api", "documents", "upload"]}
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]
+  }
+}
