@@ -39,14 +39,6 @@ resource "aws_security_group" "edge" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    from_port   = 9001
-    to_port     = 9001
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Mosquitto WebSockets proxy"
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -211,28 +203,46 @@ resource "aws_security_group" "database" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.edge.id, aws_security_group.core.id, aws_security_group.security.id, aws_security_group.compute.id]
+    security_groups = [aws_security_group.edge.id, aws_security_group.core.id, aws_security_group.security.id, aws_security_group.compute.id, aws_security_group.intelligence.id]
   }
 
   ingress {
-    from_port       = 6379
-    to_port         = 6379
-    protocol        = "tcp"
-    security_groups = [aws_security_group.edge.id, aws_security_group.core.id]
+    from_port = 6379
+    to_port   = 6379
+    protocol  = "tcp"
+    security_groups = [
+      aws_security_group.edge.id,
+      aws_security_group.core.id,
+      aws_security_group.security.id,
+      aws_security_group.compute.id,
+      aws_security_group.intelligence.id
+    ]
   }
 
   ingress {
-    from_port       = 27017
-    to_port         = 27017
-    protocol        = "tcp"
-    security_groups = [aws_security_group.core.id, aws_security_group.edge.id]
+    from_port = 27017
+    to_port   = 27017
+    protocol  = "tcp"
+    security_groups = [
+      aws_security_group.core.id,
+      aws_security_group.edge.id,
+      aws_security_group.compute.id,
+      aws_security_group.security.id,
+      aws_security_group.intelligence.id
+    ]
   }
 
   ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.compute.id, aws_security_group.edge.id]
+    from_port = 3306
+    to_port   = 3306
+    protocol  = "tcp"
+    security_groups = [
+      aws_security_group.edge.id,
+      aws_security_group.core.id,
+      aws_security_group.security.id,
+      aws_security_group.compute.id,
+      aws_security_group.intelligence.id
+    ]
   }
 
   egress {
@@ -276,7 +286,8 @@ resource "aws_security_group" "broker" {
       aws_security_group.edge.id,
       aws_security_group.core.id,
       aws_security_group.security.id,
-      aws_security_group.compute.id
+      aws_security_group.compute.id,
+      aws_security_group.intelligence.id
     ]
   }
 
@@ -366,7 +377,7 @@ resource "aws_security_group" "alb" {
 
 resource "aws_security_group" "intelligence" {
   name        = "${var.environment}-intelligence-sg"
-  description = "Security Group for Intelligence/AI Nodes"
+  description = "Security Group for AI Eligibility Agent"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -388,7 +399,7 @@ resource "aws_security_group" "intelligence" {
     from_port       = 0
     to_port         = 65535
     protocol        = "tcp"
-    security_groups = [aws_security_group.core.id, aws_security_group.edge.id]
+    security_groups = [aws_security_group.edge.id]
   }
 
   egress {

@@ -31,7 +31,7 @@ module "ec2_edge" {
   service_name       = "edge"
   subnet_id          = module.vpc.public_subnet_ids[0]
   security_group_ids = [module.security_groups.edge_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.medium"
   user_data          = local.docker_install_script
   allocate_eip       = true
 }
@@ -42,7 +42,7 @@ module "ec2_core" {
   service_name       = "core"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.core_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.medium"
   user_data          = local.docker_install_script
 }
 
@@ -52,7 +52,7 @@ module "ec2_security" {
   service_name       = "security"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.security_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.small"
   user_data          = local.docker_install_script
 }
 
@@ -62,7 +62,7 @@ module "ec2_compute" {
   service_name       = "compute"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.compute_sg_id]
-  instance_type      = "t2.micro" # Changed from t3.small to avoid Academy limits
+  instance_type      = "t3.medium"
   user_data          = local.docker_install_script
 }
 
@@ -72,7 +72,7 @@ module "ec2_database" {
   service_name       = "database"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.database_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.medium"
   user_data          = local.docker_install_script
 }
 
@@ -82,7 +82,17 @@ module "ec2_broker" {
   service_name       = "broker"
   subnet_id          = module.vpc.private_subnet_ids[0]
   security_group_ids = [module.security_groups.broker_sg_id]
-  instance_type      = "t2.micro"
+  instance_type      = "t3.medium"
+  user_data          = local.docker_install_script
+}
+
+module "ec2_intelligence" {
+  source             = "../../modules/ec2"
+  environment        = "qa"
+  service_name       = "intelligence"
+  subnet_id          = module.vpc.private_subnet_ids[0]
+  security_group_ids = [module.security_groups.intelligence_sg_id]
+  instance_type      = "t3.medium"
   user_data          = local.docker_install_script
 }
 

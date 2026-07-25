@@ -16,7 +16,10 @@ export const Timeline = ({ currentStatus }: { currentStatus: string }) => {
     if (currentStatus === "SIGNED") return 2;
     if (currentStatus === "CHANGES_REQUESTED") return 1;
     if (currentStatus === "REJECTED") return 2; // For visual rejection
-    if (currentStatus === "AI_OK") return 4;
+    if (currentStatus === "AI_OK" || currentStatus === "VALIDATING_DOC" || currentStatus === "VALIDATED") return 2;
+    if (currentStatus === "ACADEMIC_OK") return 3;
+    if (currentStatus === "APPROVED") return 4;
+    if (currentStatus === "DISBURSED" || currentStatus === "COMPLETED") return 5;
     
     const index = STEPS.findIndex((s) => s.id === currentStatus);
     return index === -1 ? 0 : index;

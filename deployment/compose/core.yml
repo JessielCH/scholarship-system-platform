@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  academic-engine:
+    image: ghcr.io/jessielch/scholarship-system-platform/academic-engine:latest
+    container_name: scholarship-academic-engine
+    restart: unless-stopped
+    environment:
+      - USE_REDIS=true
+      - REDIS_URL=redis://${DATABASE_PRIVATE_IP:-redis}:6379
+      - DB_HOST=${DATABASE_PRIVATE_IP:-postgres}
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=academicdb
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-admin123}@${BROKER_PRIVATE_IP:-rabbitmq}:5672/
+      - PORT=8081
+    ports:
+      - "8081:8081"
+
+  payment-service:
+    image: ghcr.io/jessielch/scholarship-system-platform/payment-service:latest
+    container_name: scholarship-payment-service
+    restart: unless-stopped
+    environment:
+      - PORT=3003
+      - DB_HOST=${DATABASE_PRIVATE_IP:-mariadb}
+      - DB_USER=${DB_USER:-payment_user}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=payment_db
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_test}
+    ports:
+      - "3003:3003"

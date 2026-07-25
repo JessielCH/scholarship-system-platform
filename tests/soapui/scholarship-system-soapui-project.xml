@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="12345678-1234-1234-1234-123456789012" activeEnvironment="Default" name="UCE Scholarship System" resourceRoot="" soapui-version="5.7.0" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config">
+  <con:settings/>
+  <con:interface xsi:type="con:RestService" id="87654321-4321-4321-4321-210987654321" wadlVersion="http://wadl.dev.java.net/2009/02" name="API Gateway" type="rest" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <con:settings/>
+    <con:definitionCache/>
+    <con:endpoints>
+      <con:endpoint>http://35.172.67.236:3001</con:endpoint>
+    </con:endpoints>
+    <con:resource name="Auth" path="/auth/login" id="resource-auth">
+      <con:settings/>
+      <con:parameters/>
+      <con:method name="Login" id="method-login" method="POST">
+        <con:settings/>
+        <con:parameters/>
+        <con:representation type="REQUEST">
+          <con:mediaType>application/json</con:mediaType>
+          <con:params/>
+        </con:representation>
+        <con:representation type="RESPONSE">
+          <con:mediaType>application/json</con:mediaType>
+          <con:status>200</con:status>
+          <con:params/>
+        </con:representation>
+        <con:request name="Request 1" id="request-login-1" mediaType="application/json">
+          <con:settings/>
+          <con:endpoint>http://35.172.67.236:3001</con:endpoint>
+          <con:request>{"email":"student@uce.edu.ec","password":"password123"}</con:request>
+          <con:credentials>
+            <con:authType>No Authorization</con:authType>
+          </con:credentials>
+          <con:jmsConfig JMSDeliveryMode="PERSISTENT"/>
+          <con:jmsPropertyConfig/>
+          <con:parameters/>
+        </con:request>
+      </con:method>
+    </con:resource>
+    <con:resource name="Saga Payment" path="/saga/payment" id="resource-saga">
+      <con:settings/>
+      <con:parameters/>
+      <con:method name="Execute Payment" id="method-payment" method="POST">
+        <con:settings/>
+        <con:parameters/>
+        <con:representation type="REQUEST">
+          <con:mediaType>application/json</con:mediaType>
+          <con:params/>
+        </con:representation>
+        <con:request name="Request 1" id="request-payment-1" mediaType="application/json">
+          <con:settings/>
+          <con:endpoint>http://35.172.67.236:3001</con:endpoint>
+          <con:request>{"amount": 500, "studentId": "std-001"}</con:request>
+          <con:credentials>
+            <con:authType>No Authorization</con:authType>
+          </con:credentials>
+          <con:jmsConfig JMSDeliveryMode="PERSISTENT"/>
+          <con:jmsPropertyConfig/>
+          <con:parameters/>
+        </con:request>
+      </con:method>
+    </con:resource>
+  </con:interface>
+  <con:properties/>
+  <con:wssContainer/>
+  <con:oAuth2ProfileContainer/>
+  <con:oAuth1ProfileContainer/>
+  <con:sensitiveInformation/>
+</con:soapui-project>

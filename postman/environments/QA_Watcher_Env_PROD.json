@@ -1,0 +1,21 @@
+{
+  "id": "e8889999-e123-4c56-d789-e01234567893",
+  "name": "PROD Watcher - AWS ALB",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://prod-alb-1569369580.us-east-1.elb.amazonaws.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-07-15T20:00:00.000Z",
+  "_postman_exported_using": "Postman/10.15.0"
+}

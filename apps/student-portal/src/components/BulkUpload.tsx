@@ -51,8 +51,7 @@ export function BulkUpload() {
             setAiAnalysis('error');
           }
         }, 800);
-      } catch (err) {
-        console.error(err);
+      } catch {
         setAiAnalysis('error');
       }
     };
@@ -71,7 +70,7 @@ export function BulkUpload() {
       await fetchWithAuth('/auth/bulk-register', {
         method: 'POST',
         body: JSON.stringify({
-          defaultPassword: 'student123',
+          defaultPassword: process.env.NEXT_PUBLIC_DEFAULT_STUDENT_PASSWORD || 'ChangeMe123!',
           users
         })
       });

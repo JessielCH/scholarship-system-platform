@@ -1,48 +1,69 @@
 import request from 'supertest';
-// @ts-ignore
-import Fastify from 'fastify';
-import proxy from '@fastify/http-proxy';
+import jwt from 'jsonwebtoken';
+import * as fs from 'fs';
+import * as path from 'path';
+import { fastify } from './index';
+
+jest.mock('ioredis', () => {
+  return jest.fn().mockImplementation(() => {
+    const obj: any = {
+      on: jest.fn(),
+      call: jest.fn(),
+      eval: jest.fn(),
+      quit: jest.fn(),
+      disconnect: jest.fn(),
+      rateLimit: jest.fn((...args: any[]) => {
+        const cb = args[args.length - 1];
+        if (typeof cb === 'function') cb(null, [1, 50000]);
+        return Promise.resolve([1, 50000]);
+      }),
+      defineCommand: jest.fn((name: string) => {
+        obj[name] = jest.fn((...args: any[]) => {
+          const cb = args[args.length - 1];
+          if (typeof cb === 'function') cb(null, [1, 50000]);
+          return Promise.resolve([1, 50000]);
+        });
+      }),
+    };
+    return obj;
+  });
+});
 
 describe('API Gateway Proxy', () => {
-  let app: any;
+  let validToken = '';
 
   beforeAll(async () => {
-    app = Fastify();
-    
-    app.addHook('preHandler', async (request: any, reply: any) => {
-      if (request.url.startsWith('/auth')) {
-        return;
-      }
-      reply.status(401).send({ error: 'Unauthorized' });
-    });
-
-    app.register(proxy, {
-      upstream: 'http://localhost:9999',
-      prefix: '/auth',
-      rewritePrefix: '/auth'
-    });
-
-    await app.ready();
+    await fastify.ready();
+    try {
+      const privateKey = fs.readFileSync(path.join(process.cwd(), 'keys', 'private.pem'), 'utf8');
+      validToken = jwt.sign({ sub: 'user-123', role: 'admin' }, privateKey, { algorithm: 'RS256' });
+    } catch (e) {
+      validToken = 'invalid.jwt.token';
+    }
   });
 
   afterAll(async () => {
-    await app.close();
+    await fastify.close();
+  });
+
+  it('should return health status ok', async () => {
+    const res = await request(fastify.server).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok' });
   });
 
   it('should return 401 for protected routes without token', async () => {
-    const res = await request(app.server).get('/academic/rankings');
+    const res = await request(fastify.server).get('/academic/rankings');
     expect(res.status).toBe(401);
   });
 
   it('should allow public access to /auth/login without token', async () => {
-    // For this test, we expect a proxy error or 404 because the backend isn't mocked in this supertest,
-    // but the API Gateway MUST NOT return 401. It should let it pass.
-    const response = await request(app.server).post('/auth/login').send({ email: 'test', password: 'password' });
+    const response = await request(fastify.server).post('/auth/login').send({ email: 'test', password: 'password' });
     expect(response.status).not.toBe(401);
   });
 
   it('should allow public access to /auth/register without token', async () => {
-    const response = await request(app.server).post('/auth/register').send({});
+    const response = await request(fastify.server).post('/auth/register').send({});
     expect(response.status).not.toBe(401);
   });
 });

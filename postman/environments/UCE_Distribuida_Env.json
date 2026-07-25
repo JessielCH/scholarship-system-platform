@@ -1,0 +1,27 @@
+{
+  "id": "e46c7fa8-47fb-4fb0-a7d1-dc7ec92cd86b",
+  "name": "UCE Distribuida Prod ALB",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://prod-alb-1569369580.us-east-1.elb.amazonaws.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "studentId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2024-01-01T00:00:00.000Z",
+  "_postman_exported_using": "Postman/10.15.0"
+}

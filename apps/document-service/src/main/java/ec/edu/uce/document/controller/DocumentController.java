@@ -84,9 +84,13 @@ public class DocumentController {
             DocumentMetadata saved = documentRepository.save(metadata);
             
             // Publicar evento en RabbitMQ (Kafka/Rabbit) - Sprint 6 / S5 expandido
-            String eventMessage = String.format("{\"studentId\":\"%s\", \"documentId\":\"%s\", \"status\":\"%s\", \"reason\":\"%s\"}", 
-                    saved.getStudentId(), saved.getId(), saved.getStatus(), saved.getRejectionReason());
-            rabbitTemplate.convertAndSend("document.events.exchange", "document.status.changed", eventMessage);
+            try {
+                String eventMessage = String.format("{\"studentId\":\"%s\", \"documentId\":\"%s\", \"status\":\"%s\", \"reason\":\"%s\"}", 
+                        saved.getStudentId(), saved.getId(), saved.getStatus(), saved.getRejectionReason());
+                rabbitTemplate.convertAndSend("document.events.exchange", "document.status.changed", eventMessage);
+            } catch (Exception ex) {
+                System.err.println("No se pudo notificar el cambio a RabbitMQ (operando en modo resiliente): " + ex.getMessage());
+            }
             
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
