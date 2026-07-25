@@ -22,7 +22,7 @@ export function getReceipts(): Record<string, PaymentReceipt> {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : {};
-  } catch (e) {
+  } catch {
     return {};
   }
 }

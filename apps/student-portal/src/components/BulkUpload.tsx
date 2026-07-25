@@ -51,7 +51,7 @@ export function BulkUpload() {
             setAiAnalysis('error');
           }
         }, 800);
-      } catch (err) {
+      } catch {
         setAiAnalysis('error');
       }
     };

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CreditCard, ShieldCheck, Lock, DollarSign, CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { CreditCard, ShieldCheck, Lock, CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { saveReceipt, generateStripeHash, PaymentReceipt } from '../lib/receipts';
 
 interface StripePaymentModalProps {
@@ -97,6 +97,10 @@ export const StripePaymentModal: React.FC<StripePaymentModalProps> = ({
         {step === 'form' ? (
           <form onSubmit={handleProcessPayment} className="p-6 space-y-5">
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs space-y-2">
+              <div className="flex justify-between text-slate-600">
+                <span>Beneficiario:</span>
+                <span className="font-bold text-slate-900 truncate max-w-[200px]">{studentName} ({studentId})</span>
+              </div>
               <div className="flex justify-between text-slate-600">
                 <span>Tipo de Beca:</span>
                 <span className="font-bold text-slate-900">{type === 'EXCELLENCE' ? 'Beca de Excelencia ($800)' : 'Beca Socioeconómica ($500)'}</span>

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ShieldCheck, Printer, Download, X, CheckCircle2, Award, FileText, Building } from 'lucide-react';
+import { ShieldCheck, Printer, X, Award, FileText } from 'lucide-react';
 import { PaymentReceipt } from '../lib/receipts';
 
 interface PaymentReceiptModalProps {

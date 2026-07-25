@@ -34,14 +34,17 @@ export default function StudentDashboard() {
   const [myReceipt, setMyReceipt] = useState<PaymentReceipt | null>(null);
 
   useEffect(() => {
-    if (user?.sub) {
-      setMyReceipt(getReceiptByStudentId(user.sub));
-    }
+    const timer = setTimeout(() => {
+      if (user?.sub) setMyReceipt(getReceiptByStudentId(user.sub));
+    }, 0);
     const handleUpdate = () => {
       if (user?.sub) setMyReceipt(getReceiptByStudentId(user.sub));
     };
     window.addEventListener('receipt_updated', handleUpdate);
-    return () => window.removeEventListener('receipt_updated', handleUpdate);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('receipt_updated', handleUpdate);
+    };
   }, [user?.sub]);
 
   useEffect(() => {
@@ -80,7 +83,7 @@ export default function StudentDashboard() {
                currentStatus = 'VALIDATING_DOC';
             }
           }
-        } catch (e) {
+        } catch {
           console.warn("Document service unavailable, continuing with default status");
         }
 
