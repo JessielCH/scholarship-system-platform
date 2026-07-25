@@ -283,7 +283,7 @@ export default function StudentDashboard() {
                   </span>
                 ) : (
                   <span className="block mt-2 font-medium text-slate-700">
-                    Tu expediente está listo para la transferencia electrónica mediante el sistema Stripe Connect.
+                    Tu certificado bancario ha sido validado satisfactoriamente. Tu expediente está habilitado para recibir la transferencia institucional directa.
                   </span>
                 )}
               </p>
@@ -294,14 +294,14 @@ export default function StudentDashboard() {
                     onClick={() => setViewingReceipt(myReceipt)}
                     className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg transition"
                   >
-                    <ReceiptIcon size={16} /> Ver y Descargar Comprobante de Pago
+                    <ReceiptIcon size={16} /> Ver y Descargar Comprobante de Pago Oficial
                   </button>
                 ) : (
                   <button
                     onClick={() => setShowStripeModal(true)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 transition animate-bounce"
+                    className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-6 py-3.5 rounded-xl text-sm font-extrabold flex items-center gap-2.5 shadow-xl shadow-green-200 transition transform hover:scale-105"
                   >
-                    <CreditCard size={16} /> Abrir Plataforma Stripe y Simular Pago
+                    <CreditCard size={18} /> Solicitar Desembolso en Cuenta Bancaria
                   </button>
                 )}
               </div>

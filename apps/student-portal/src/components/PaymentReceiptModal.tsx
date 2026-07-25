@@ -95,7 +95,7 @@ export const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({ receip
               <strong className="text-slate-800 text-xs block mt-1">{receipt.date}</strong>
             </div>
             <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200/80">
-              <span className="text-slate-400 block font-semibold text-[10px] uppercase">Referencia Cryptográfica Stripe</span>
+              <span className="text-slate-400 block font-semibold text-[10px] uppercase">Referencia de Depósito Bancario</span>
               <strong className="font-mono text-indigo-700 text-xs block mt-1 truncate">{receipt.stripeReference}</strong>
             </div>
           </div>

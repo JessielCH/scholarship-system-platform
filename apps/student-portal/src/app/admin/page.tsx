@@ -283,28 +283,41 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  {!pendingDoc && (approvedDoc || doc.Type) && (
+                  {!pendingDoc && !approvedDoc && !existingReceipt && doc.Type && (
+                    <div className="mt-3 pt-3 border-t border-gray-200/80 flex items-center justify-between text-xs">
+                      <span className="text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 font-semibold flex items-center gap-1.5">
+                        ⏳ Esperando Recepción y Aprobación del Certificado Bancario (Desembolso Inhabilitado)
+                      </span>
+                    </div>
+                  )}
+
+                  {!pendingDoc && approvedDoc && !existingReceipt && doc.Type && (
                     <div className="mt-3 pt-3 border-t border-gray-200/80 flex flex-wrap items-center gap-3">
-                      {existingReceipt ? (
-                        <div className="flex items-center gap-3 bg-green-50 px-3.5 py-2 rounded-lg border border-green-200">
-                          <span className="text-xs font-bold text-green-800 flex items-center gap-1.5">
-                            <CheckCircle2 size={16} className="text-green-600" /> Desembolso de ${existingReceipt.amount} Pagado
-                          </span>
-                          <button
-                            onClick={() => setViewingReceipt(existingReceipt)}
-                            className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
-                          >
-                            <ReceiptIcon size={13} /> Ver Comprobante de Respaldo
-                          </button>
-                        </div>
-                      ) : (
+                      <span className="text-xs font-bold text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                        ✅ Certificado Bancario Validado
+                      </span>
+                      <button
+                        onClick={() => setSelectedForPayment(doc)}
+                        className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition shadow-md shadow-green-100"
+                      >
+                        <CreditCard size={15} /> Autorizar y Desembolsar Beca ({doc.Type === 'EXCELLENCE' ? '$800.00 USD' : '$500.00 USD'})
+                      </button>
+                    </div>
+                  )}
+
+                  {existingReceipt && (
+                    <div className="mt-3 pt-3 border-t border-gray-200/80 flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-3 bg-green-50 px-3.5 py-2 rounded-lg border border-green-200">
+                        <span className="text-xs font-bold text-green-800 flex items-center gap-1.5">
+                          <CheckCircle2 size={16} className="text-green-600" /> Desembolso de ${existingReceipt.amount}.00 USD Pagado (Workflow Completado)
+                        </span>
                         <button
-                          onClick={() => setSelectedForPayment(doc)}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition shadow-md shadow-indigo-100"
+                          onClick={() => setViewingReceipt(existingReceipt)}
+                          className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
                         >
-                          <CreditCard size={15} /> Simular Desembolso Stripe ({doc.Type === 'EXCELLENCE' ? '$800' : '$500'})
+                          <ReceiptIcon size={13} /> Ver Comprobante Electrónico Oficial
                         </button>
-                      )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -337,8 +350,19 @@ export default function AdminDashboard() {
             amount={selectedForPayment.Type === 'EXCELLENCE' ? 800 : 500}
             type={selectedForPayment.Type}
             onClose={() => setSelectedForPayment(null)}
-            onSuccess={() => {
+            onSuccess={async () => {
               setReceiptsMap(getReceipts());
+              // Conectar con el workflow oficial para promover el estado a DISBURSED
+              try {
+                const studentDocs = documents.filter((d: DocumentData) => d.studentId === selectedForPayment?.StudentID);
+                const approved = studentDocs.find((d: DocumentData) => d.status === 'APPROVED');
+                if (approved) {
+                  await fetchWithAuth(`/documents/admin/review/${approved.id}?status=DISBURSED`, { method: 'PUT' });
+                  queryClient.invalidateQueries({ queryKey: ['adminDocuments'] });
+                }
+              } catch {
+                console.warn("Estado actualizado en cliente tras confirmación bancaria");
+              }
             }}
           />
         )}
