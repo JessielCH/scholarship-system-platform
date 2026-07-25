@@ -8,6 +8,10 @@
     "test": {
       "dependsOn": ["^build"]
     },
+    "test:cov": {
+      "cache": false,
+      "outputs": ["coverage/**"]
+    },
     "lint": {},
     "dev": {
       "cache": false,
